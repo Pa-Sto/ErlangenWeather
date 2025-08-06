@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Model Predictions</title>
+  <!-- Tailwind CSS via CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-4">City Weather Predictions</h1>
+
+    <!-- Next Day Forecast Section -->
+    <div id="prediction" class="bg-white rounded shadow p-4 mb-4">
+      <h2 class="text-2xl font-semibold mb-2">Next Day Forecast</h2>
+      <p id="pred-loading">Loading...</p>
+      <ul id="pred-list" class="list-disc list-inside"></ul>
+    </div>
+
+    <!-- Model Accuracy Section -->
+    <div id="accuracy" class="bg-white rounded shadow p-4">
+      <h2 class="text-2xl font-semibold mb-2">Past Model Accuracy</h2>
+      <p id="acc-loading">Loading...</p>
+      <ul id="acc-list" class="list-disc list-inside"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Replace these endpoints with your actual API or hosted JSON files
+    const PREDICTION_ENDPOINT = '/prediction.json';
+    const ACCURACY_ENDPOINT   = '/accuracy.json';
+
+    // Fetch and render next-day prediction
+    async function fetchPrediction() {
+      try {
+        const res = await fetch(PREDICTION_ENDPOINT);
+        const data = await res.json();
+        document.getElementById('pred-loading').style.display = 'none';
+        const list = document.getElementById('pred-list');
+        list.innerHTML = '';
+        // Expect data shape: { date: 'YYYY-MM-DD', temperature: 20, humidity: 60, ... }
+        Object.entries(data).forEach(([key, value]) => {
+          const li = document.createElement('li');
+          li.textContent = `${key}: ${value}`;
+          list.appendChild(li);
+        });
+      } catch (error) {
+        document.getElementById('pred-loading').textContent = 'Error loading predictions.';
+        console.error(error);
+      }
+    }
+
+    // Fetch and render past accuracy metrics
+    async function fetchAccuracy() {
+      try {
+        const res = await fetch(ACCURACY_ENDPOINT);
+        const data = await res.json();
+        document.getElementById('acc-loading').style.display = 'none';
+        const list = document.getElementById('acc-list');
+        list.innerHTML = '';
+        // Expect data shape: [ { date: 'YYYY-MM-DD', mae: 1.2, mse: 2.3 }, ... ]
+        data.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = `${item.date}: MAE = ${item.mae}, MSE = ${item.mse}`;
+          list.appendChild(li);
+        });
+      } catch (error) {
+        document.getElementById('acc-loading').textContent = 'Error loading accuracy.';
+        console.error(error);
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchPrediction();
+      fetchAccuracy();
+    });
+  </script>
+</body>
+</html>
