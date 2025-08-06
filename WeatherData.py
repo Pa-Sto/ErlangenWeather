@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 from typing import List
+import json
 
 # -- 1. Data wrapper (as before) ------------------------------------------
 
@@ -169,3 +170,31 @@ if __name__ == "__main__":
       validation_data=(X_val, y_val),
       epochs=10, batch_size=16
     )
+    # -- Save current prediction and history accuracy to JSON
+    # Next-day prediction using last window from validation set
+    last_window = X_val[-1:]
+    next_pred = model.predict(last_window)[0]
+    last_time = df.index[-1]
+    pred_dict = {}
+    for i, val in enumerate(next_pred):
+        t = last_time + pd.Timedelta(hours=i+1)
+        pred_dict[t.strftime('%Y-%m-%dT%H:%M:%S')] = float(val)
+    with open('prediction.json', 'w') as f:
+        json.dump(pred_dict, f, indent=2)
+
+    # Historical accuracy on validation set (first forecast hour)
+    val_preds = model.predict(X_val)
+    errors = np.abs(val_preds[:, 0] - y_val[:, 0])
+    mses = errors ** 2
+    num_samples = X.shape[0]
+    times_all = df.index[SEQ_LEN:SEQ_LEN + num_samples]
+    val_times = times_all[split:]
+    history_list = []
+    for t, mae_i, mse_i in zip(val_times, errors, mses):
+        history_list.append({
+            'date': t.strftime('%Y-%m-%dT%H:%M:%S'),
+            'mae': float(mae_i),
+            'mse': float(mse_i)
+        })
+    with open('accuracy.json', 'w') as f:
+        json.dump(history_list, f, indent=2)
