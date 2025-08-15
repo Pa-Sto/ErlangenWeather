@@ -1,52 +1,16 @@
 {
-  "model_name": "ErlangenWeather Transformer V0",
-  "version": "0.0",
-  "location": "Erlangen",
-  "Coordinates": { "lat": 49.59, "lon": 11.00 },
-  "training_data": {
-    "source": "Open-Meteo ERA5 archive",
-    "timezone": "Europe/Berlin",
-    "span": [null, null],
-    "cache_file": "historical_data.csv"
-  },
+  "training_data": { "span": ["1979-01-01","2025-08-15"], "source": "Open-Meteo ERA5 archive" },
   "input": {
     "window_days": 10,
-    "timestep": "hourly",
-    "features_count": 27,
-    "feature_groups": [
-      "temperature_2m",
-      "relativehumidity_2m",
-      "pressure_msl",
-      "windspeed_10m",
-      "winddirection_10m",
-      "cloudcover",
-      "shortwave_radiation",
-      "engineered: wind_u_10m, wind_v_10m, dewpoint_2m, dp_dt_3h",
-      "engineered: temp_prev_day, temp_delta_prev_day",
-      "time features: hour_sin, hour_cos, dow_sin, dow_cos, doy_sin, doy_cos"
-    ],
-    "normalization": "z-score per feature (fit on training split)"
+    "features": [
+      "temperature_2m","relativehumidity_2m","pressure_msl",
+      "windspeed_10m","winddirection_10m","cloudcover","shortwave_radiation",
+      "wind_u_10m","wind_v_10m","dewpoint_2m","dp_dt_3h",
+      "temp_prev_day","temp_delta_prev_day",
+      "hour_sin","hour_cos","dow_sin","dow_cos","doy_sin","doy_cos"
+    ]
   },
-  "output": {
-    "target": "temperature_2m (°C)",
-    "horizon_hours": 24,
-    "temporal_granularity": "hourly",
-    "postprocessing": "denormalize with temp_mean/temp_std"
-  },
-  "architecture": {
-    "type": "Transformer encoder (CLS token)",
-    "d_model": 64,
-    "layers": 2,
-    "heads": 4,
-    "positional_encoding": "sinusoidal",
-    "loss": "weighted MSE (1.0 → 0.5 across horizon)",
-    "optimizer": "Adam",
-    "activation": "GELU"
-  },
-  "accuracy_overall": {
-    "metric": "skill_vs_persistence (100*(1 - MSE_model/MSE_persistence))",
-    "accuracy_percent": null,
-    "n_days": 0,
-    "updated_at": null
-  }
+  "output": "Next 24 hourly temperature_2m (°C)",
+  "architecture": { "type": "Transformer encoder (CLS)", "d_model": 64, "layers": 2, "heads": 4 },
+  "location": { "City": "Erlangen","lat": 49.59, "lon": 11.00 }
 }
