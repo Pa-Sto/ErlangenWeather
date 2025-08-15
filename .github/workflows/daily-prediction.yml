@@ -24,10 +24,6 @@ jobs:
           if [ "$H" = "00" ] && [ "$M" = "01" ]; then
             echo "RUN_NOW=true" >> $GITHUB_ENV
             echo "It's 00:01 in Berlin. Proceeding."
-          else
-            echo "RUN_NOW=false" >> $GITHUB_ENV
-            echo "Not 00:01 in Berlin. Skipping subsequent steps."
-          fi
 
       - uses: actions/setup-python@v5
         if: env.RUN_NOW == 'true'
