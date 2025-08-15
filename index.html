@@ -39,13 +39,6 @@
     <ul id="pred-list" class="list-disc list-inside"></ul>
   </div>
 
-    <!-- Model Details Section -->
-    <div id="model-info" class="bg-white rounded shadow p-4 mb-4">
-      <h2 class="text-2xl font-semibold mb-2">Model Details</h2>
-      <p id="model-loading">Loading...</p>
-      <ul id="model-list" class="list-disc list-inside text-sm"></ul>
-    </div>
-
     <!-- Model Accuracy Section -->
     <div id="accuracy" class="bg-white rounded shadow p-4">
       <h2 class="text-2xl font-semibold mb-2">Past Model Accuracy</h2>
@@ -53,6 +46,13 @@
       <ul id="acc-list" class="list-disc list-inside"></ul>
     </div>
   </div>
+
+      <!-- Model Details Section -->
+    <div id="model-info" class="bg-white rounded shadow p-4 mb-4">
+      <h2 class="text-2xl font-semibold mb-2">Model Details</h2>
+      <p id="model-loading">Loading...</p>
+      <ul id="model-list" class="list-disc list-inside text-sm"></ul>
+    </div>
 
   <script>
     // Endpoints for static JSON files (GitHub Pages-friendly)
@@ -121,7 +121,12 @@
           const li = document.createElement('li');
           const local = new Date(ts);
           const hh = local.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          li.textContent = `${hh}: ${Number(val).toFixed(1)} °C`;
+
+          const timeEl = document.createElement('strong');
+          timeEl.textContent = hh; // bold timestamp
+
+          li.appendChild(timeEl);
+          li.append(`: ${Number(val).toFixed(1)} °C`);
           list.appendChild(li);
         });
       } catch (error) {
