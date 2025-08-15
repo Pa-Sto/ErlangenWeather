@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+from sqlalchemy import false
 from tensorflow.keras import layers
 from typing import List
 import json
@@ -539,6 +540,17 @@ def weighted_mse(y_true, y_pred):
     sq_err = tf.square(y_true - y_pred)   # shape: (batch, H)
     return tf.reduce_mean(w * sq_err)     # mean over batch and horizon
 
+# --- Robust model loader for custom loss ---
+def load_model_safe(path: str):
+    """Load a Keras model handling custom loss 'weighted_mse'.
+    Tries with custom_objects first, then falls back to compile=False for inference-only.
+    """
+    try:
+        return load_model(path, custom_objects={"weighted_mse": weighted_mse})
+    except Exception as e1:
+        print(f"[Model] load_model with custom_objects failed: {e1}\n[Model] Retrying with compile=False …")
+        return load_model(path, compile=False)
+
 # -- 6. Build the time-series Transformer model --------------------------
 
 def build_transformer_model(
@@ -872,9 +884,12 @@ if __name__ == "__main__":
             callbacks=callbacks,
             verbose=1
         )
-        model.save("model")
+        # Save without optimizer state; we only need inference in CI / predict-only
+        model.save("model", include_optimizer=False)
     else:
-        model = load_model("model")
+        if not os.path.exists("model"):
+            raise SystemExit("[Model] No saved model found at 'model'. Train once locally (run without --predict-only) or commit the 'model/' directory.")
+        model = load_model_safe("model")
     # Save outputs via helper functions
     save_prediction(
         model, X_val, df,
