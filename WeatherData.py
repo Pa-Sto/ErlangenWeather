@@ -660,8 +660,182 @@ def save_prediction(
     with open(point_file, 'w') as f:
         json.dump(point_summary, f, indent=2)
 
+    # Persist this forecast for later verification
+    try:
+        os.makedirs("predictions", exist_ok=True)
+        daily_payload = {
+            "meta": {
+                "forecast_day": forecast_day,
+                "forecast_day_name": forecast_day_name,
+                "generated_at": generated_at,
+                "lat": lat, "lon": lon,
+                "units": "C"
+            },
+            "series": pred_dict
+        }
+        daily_path = os.path.join("predictions", f"pred_{forecast_day}.json")
+        with open(daily_path, "w") as f:
+            json.dump(daily_payload, f, indent=2)
+        # Update consolidated history file
+        _append_history_prediction("history_predictions.json", forecast_day, pred_dict, generated_at)
+    except Exception as e:
+        print(f"[Warn] Could not write daily/history prediction files: {e}")
+
     print('Next day Prediction (°C) written to', output_file)
     print('Summary point written to', point_file)
+
+
+# -- Persist history + compute single-number accuracy ----------------------
+
+def _append_history_prediction(history_file: str, forecast_day: str, pred_dict: dict, generated_at: str):
+    """Append/replace the entry for forecast_day in a consolidated history JSON file."""
+    history = []
+    if os.path.exists(history_file) and os.path.getsize(history_file) > 0:
+        try:
+            with open(history_file, "r") as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+    # de-duplicate by date
+    history = [h for h in history if h.get("date") != forecast_day]
+    history.append({
+        "date": forecast_day,
+        "generated_at": generated_at,
+        "series": pred_dict,
+    })
+    history.sort(key=lambda x: x.get("date", ""))
+    with open(history_file, "w") as f:
+        json.dump(history, f, indent=2)
+
+
+def _ensure_cache_has_days(cache_file: str, latitude: float, longitude: float, days: list, timezone: str):
+    """Ensure historical_data.csv has all hours for the given days; fetch missing days from Open-Meteo."""
+    if not days:
+        return
+    # Load existing cache if present
+    have = set()
+    if os.path.exists(cache_file) and os.path.getsize(cache_file) > 0:
+        dfc = pd.read_csv(cache_file, index_col="time", parse_dates=["time"]).sort_index()
+        # mark days with full 24 hours present
+        if not dfc.empty:
+            # count hours per UTC date string
+            counts = dfc.groupby(dfc.index.strftime('%Y-%m-%d')).size()
+            have = set(counts[counts >= 24].index.tolist())
+    # Identify which days are missing or incomplete
+    missing = [d for d in sorted(set(days)) if d not in have]
+    for d in missing:
+        try:
+            update_cache_with_historical(
+                latitude, longitude,
+                start=d, end=d,
+                variables=["temperature_2m", "relativehumidity_2m", "pressure_msl",
+                           "windspeed_10m", "winddirection_10m", "cloudcover", "shortwave_radiation"],
+                timezone=timezone,
+                cache_file=cache_file,
+                show_progress=False
+            )
+        except Exception as e:
+            print(f"[Accuracy] Could not fetch actuals for {d}: {e}")
+
+
+def update_accuracy_from_history(cache_file: str,
+                                 history_file: str = "history_predictions.json",
+                                 overall_file: str = "accuracy_overall.json",
+                                 timezone: str = "Europe/Berlin"):
+    """Compute a single accuracy % using skill vs persistence baseline.
+    accuracy_percent = mean over days of max(0, 100 * (1 - MSE_model / MSE_persistence)).
+    Persistence forecast uses actual(T-24h) for each hour.
+    """
+    if not (os.path.exists(history_file) and os.path.getsize(history_file) > 0):
+        print("[Accuracy] No history_predictions.json yet; skipping overall accuracy.")
+        return
+    with open(history_file, "r") as f:
+        history = json.load(f)
+    if not history:
+        return
+    # Ensure we only evaluate past days
+    today = datetime.utcnow().date().isoformat()
+    eval_entries = [h for h in history if h.get("date", "") < today]
+    if not eval_entries:
+        print("[Accuracy] No past days to evaluate yet.")
+        return
+    # Ensure cache has those days and the preceding day for persistence
+    days_needed = set(h["date"] for h in eval_entries)
+    # Also need previous day for persistence baseline
+    prev_days = set((date.fromisoformat(d) - timedelta(days=1)).isoformat() for d in days_needed)
+    _ensure_cache_has_days(cache_file, LAT, LON, list(days_needed | prev_days), timezone)
+
+    # Load cache after ensuring
+    dfc = pd.read_csv(cache_file, index_col="time", parse_dates=["time"]).sort_index()
+
+    daily_percents = []
+    for h in eval_entries:
+        fday = h.get("date")
+        series = h.get("series", {})
+        # Align to hours present in both prediction and actuals
+        times = sorted(series.keys())
+        if not times:
+            continue
+        # Build arrays
+        y_pred = []
+        y_true = []
+        y_pers = []
+        for ts in times:
+            try:
+                t = pd.Timestamp(ts)
+                # actual
+                if t in dfc.index:
+                    actual = dfc.loc[t, "temperature_2m"]
+                else:
+                    # try without seconds
+                    actual = dfc.loc.get(t, np.nan)
+                if pd.isna(actual):
+                    continue
+                # persistence = actual at t - 24h
+                t_prev = t - pd.Timedelta(hours=24)
+                if t_prev in dfc.index:
+                    pers = dfc.loc[t_prev, "temperature_2m"]
+                else:
+                    pers = np.nan
+                if pd.isna(pers):
+                    continue
+                y_true.append(float(actual))
+                y_pred.append(float(series[ts]))
+                y_pers.append(float(pers))
+            except Exception:
+                continue
+        if len(y_true) < 6:  # require at least 6 hours to compute stable metric
+            continue
+        y_true = np.array(y_true, dtype=float)
+        y_pred = np.array(y_pred, dtype=float)
+        y_pers = np.array(y_pers, dtype=float)
+        mse_model = float(np.mean((y_pred - y_true) ** 2))
+        mse_pers = float(np.mean((y_pers - y_true) ** 2)) if np.any(~np.isnan(y_pers)) else None
+        if mse_pers is None or mse_pers < 1e-6:
+            # Fallback: if persistence has ~zero error (rare) use small epsilon
+            mse_pers = 1e-6
+        acc = 100.0 * (1.0 - (mse_model / mse_pers))
+        # clip to [0, 100] for display
+        acc = float(max(0.0, min(100.0, acc)))
+        daily_percents.append({"date": fday, "accuracy_percent": acc})
+
+    if not daily_percents:
+        print("[Accuracy] Could not compute any daily accuracy values.")
+        return
+
+    overall = float(np.mean([d["accuracy_percent"] for d in daily_percents]))
+    payload = {
+        "accuracy_percent": overall,
+        "n_days": len(daily_percents),
+        "updated_at": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "definition": "100*(1 - MSE_model/MSE_persistence) clipped to [0,100]",
+    }
+    with open(overall_file, "w") as f:
+        json.dump(payload, f, indent=2)
+    # Also write per-day breakdown (optional)
+    with open("accuracy_daily.json", "w") as f:
+        json.dump(daily_percents, f, indent=2)
+    print(f"[Accuracy] Overall accuracy: {overall:.1f}% over {len(daily_percents)} day(s)")
 
 def save_accuracy(model, X_val, y_val, df, split, seq_len, output_file='accuracy.json', stride: int = 1, temp_mean: float = None, temp_std: float = None):
     """
@@ -905,4 +1079,10 @@ if __name__ == "__main__":
         output_file='accuracy.json', stride=24,
         temp_mean=temp_mean, temp_std=temp_std
     )
-    # Optionally verify JSON files
+    # Update single-number accuracy (vs persistence baseline) from saved history
+    update_accuracy_from_history(
+        cache_file=cache_file,
+        history_file="history_predictions.json",
+        overall_file="accuracy_overall.json",
+        timezone="Europe/Berlin",
+    )
