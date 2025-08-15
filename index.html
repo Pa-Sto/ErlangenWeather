@@ -18,13 +18,14 @@
       Forecast for <span id="forecast-day" class="font-medium">—</span>
       • Updated <span id="generated-at">—</span>
     </p>
+    <p class="mb-2">Window: <strong><span id="window-range">—</span></strong></p>
     <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-      <div class="p-3 bg-blue-50 rounded">
+      <div class="p-3 bg-rose-50 rounded">
         <span class="block text-xs uppercase text-gray-500">Max</span>
         <span id="max-temp" class="text-xl font-semibold">—</span>
         <div id="max-time" class="text-xs text-gray-500">—</div>
       </div>
-      <div class="p-3 bg-rose-50 rounded">
+      <div class="p-3 bg-blue-50 rounded">
         <span class="block text-xs uppercase text-gray-500">Min</span>
         <span id="min-temp" class="text-xl font-semibold">—</span>
         <div id="min-time" class="text-xs text-gray-500">—</div>
@@ -37,6 +38,13 @@
     <p id="pred-loading">Loading hourly forecast…</p>
     <ul id="pred-list" class="list-disc list-inside"></ul>
   </div>
+
+    <!-- Model Details Section -->
+    <div id="model-info" class="bg-white rounded shadow p-4 mb-4">
+      <h2 class="text-2xl font-semibold mb-2">Model Details</h2>
+      <p id="model-loading">Loading...</p>
+      <ul id="model-list" class="list-disc list-inside text-sm"></ul>
+    </div>
 
     <!-- Model Accuracy Section -->
     <div id="accuracy" class="bg-white rounded shadow p-4">
@@ -102,6 +110,13 @@
           .map(([ts, val]) => ({ ts, val }))
           .sort((a, b) => new Date(a.ts) - new Date(b.ts));
 
+        if (entries.length) {
+          const first = new Date(entries[0].ts);
+          const last  = new Date(entries[entries.length - 1].ts);
+          const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          document.getElementById('window-range').textContent = `${fmt(first)} → ${fmt(last)}`;
+        }
+
         entries.forEach(({ ts, val }) => {
           const li = document.createElement('li');
           const local = new Date(ts);
@@ -135,11 +150,42 @@
       }
     }
 
+    async function fetchModelInfo() {
+      try {
+        const res = await fetch('model_info.json?cb=' + Date.now());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const info = await res.json();
+        document.getElementById('model-loading').style.display = 'none';
+        const list = document.getElementById('model-list');
+        const items = [];
+        if (info.training_data) {
+          const span = info.training_data.span || [null, null];
+          items.push(`Training data: ${span[0] || '—'} → ${span[1] || '—'} (${info.training_data.source || ''})`);
+        }
+        if (info.input) {
+          const feats = Array.isArray(info.input.features) ? info.input.features.length : '—';
+          items.push(`Input: ${info.input.window_days}-day window • ${feats} features`);
+        }
+        if (info.output) items.push(`Output: ${info.output}`);
+        if (info.architecture) {
+          const a = info.architecture;
+          items.push(`Architecture: ${a.type} • d_model=${a.d_model}, layers=${a.layers}, heads=${a.heads}`);
+        }
+        if (info.location) items.push(`Location: lat ${info.location.lat}, lon ${info.location.lon}`);
+        list.innerHTML = items.map(t => `<li>${t}</li>`).join('');
+      } catch (e) {
+        console.error('Model info error:', e);
+        const m = document.getElementById('model-loading');
+        if (m) m.textContent = 'No model info available.';
+      }
+    }
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
       fetchSummary();
       fetchPrediction();
       fetchAccuracy();
+      fetchModelInfo();
     });
   </script>
 </body>
