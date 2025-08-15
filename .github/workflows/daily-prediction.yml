@@ -1,0 +1,46 @@
+name: Daily prediction
+
+on:
+  schedule:
+    # ~05:15 Europe/Berlin (03:15 UTC)
+    - cron: "15 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run prediction (no training)
+        run: |
+          python WeatherData.py --predict-only --extend-to-present --cache-file historical_data.csv --lat 49.59 --lon 11.00
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add historical_data.csv prediction.json prediction_point.json accuracy.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Daily prediction update [skip ci]"
+            git push
+          else:
+            echo "No changes to commit."
+          fi

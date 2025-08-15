@@ -13,10 +13,30 @@
 
     <!-- Next Day Forecast Section -->
     <div id="prediction" class="bg-white rounded shadow p-4 mb-4">
-      <h2 class="text-2xl font-semibold mb-2">Next Day Forecast</h2>
-      <p id="pred-loading">Loading...</p>
-      <ul id="pred-list" class="list-disc list-inside"></ul>
+    <h2 class="text-2xl font-semibold mb-2">Next Day Forecast</h2>
+    <p class="text-sm text-gray-600 mb-2">
+      Forecast for <span id="forecast-day" class="font-medium">—</span>
+      • Updated <span id="generated-at">—</span>
+    </p>
+    <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+      <div class="p-3 bg-blue-50 rounded">
+        <span class="block text-xs uppercase text-gray-500">Max</span>
+        <span id="max-temp" class="text-xl font-semibold">—</span>
+        <div id="max-time" class="text-xs text-gray-500">—</div>
+      </div>
+      <div class="p-3 bg-rose-50 rounded">
+        <span class="block text-xs uppercase text-gray-500">Min</span>
+        <span id="min-temp" class="text-xl font-semibold">—</span>
+        <div id="min-time" class="text-xs text-gray-500">—</div>
+      </div>
+      <div class="p-3 bg-emerald-50 rounded">
+        <span class="block text-xs uppercase text-gray-500">Mean</span>
+        <span id="mean-temp" class="text-xl font-semibold">—</span>
+      </div>
     </div>
+    <p id="pred-loading">Loading hourly forecast…</p>
+    <ul id="pred-list" class="list-disc list-inside"></ul>
+  </div>
 
     <!-- Model Accuracy Section -->
     <div id="accuracy" class="bg-white rounded shadow p-4">
@@ -27,22 +47,66 @@
   </div>
 
   <script>
-    // Replace these endpoints with your actual API or hosted JSON files
-    const PREDICTION_ENDPOINT = '/prediction.json';
-    const ACCURACY_ENDPOINT   = '/accuracy.json';
+    // Endpoints for static JSON files (GitHub Pages-friendly)
+    const POINT_ENDPOINT      = 'prediction_point.json';
+    const PREDICTION_ENDPOINT = 'prediction.json';
+    const ACCURACY_ENDPOINT   = 'accuracy.json';
 
-    // Fetch and render next-day prediction
+    // Helpers
+    function fmtLocalTime(ts) {
+      const d = new Date(ts);
+      return d.toLocaleString(undefined, {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    // Fetch and render summary (forecast day + max/min/mean)
+    async function fetchSummary() {
+      try {
+        const res = await fetch(`${POINT_ENDPOINT}?cb=${Date.now()}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        // Day & updated time
+        const dayName = data.forecast_day_name || '';
+        const dayISO  = data.forecast_day || '';
+        document.getElementById('forecast-day').textContent = dayName && dayISO ? `${dayName} (${dayISO})` : (dayISO || '—');
+        document.getElementById('generated-at').textContent = data.generated_at ? fmtLocalTime(data.generated_at) : '—';
+
+        // Summary cards
+        const maxTemp = (data.max_temp_c != null) ? `${data.max_temp_c.toFixed(1)} °C` : '—';
+        const minTemp = (data.min_temp_c != null) ? `${data.min_temp_c.toFixed(1)} °C` : '—';
+        const meanTemp = (data.mean_temp_c != null) ? `${data.mean_temp_c.toFixed(1)} °C` : '—';
+        document.getElementById('max-temp').textContent = maxTemp;
+        document.getElementById('min-temp').textContent = minTemp;
+        document.getElementById('mean-temp').textContent = meanTemp;
+        document.getElementById('max-time').textContent = data.max_time ? fmtLocalTime(data.max_time) : '—';
+        document.getElementById('min-time').textContent = data.min_time ? fmtLocalTime(data.min_time) : '—';
+      } catch (err) {
+        console.error('Summary error:', err);
+      }
+    }
+
+    // Fetch and render next-day hourly prediction
     async function fetchPrediction() {
       try {
-        const res = await fetch(PREDICTION_ENDPOINT);
+        const res = await fetch(`${PREDICTION_ENDPOINT}?cb=${Date.now()}`);
         const data = await res.json();
         document.getElementById('pred-loading').style.display = 'none';
         const list = document.getElementById('pred-list');
         list.innerHTML = '';
-        // Expect data shape: { date: 'YYYY-MM-DD', temperature: 20, humidity: 60, ... }
-        Object.entries(data).forEach(([key, value]) => {
+
+        // data is an object: { 'YYYY-MM-DDTHH:MM:SS': valueC, ... }
+        const entries = Object.entries(data)
+          .map(([ts, val]) => ({ ts, val }))
+          .sort((a, b) => new Date(a.ts) - new Date(b.ts));
+
+        entries.forEach(({ ts, val }) => {
           const li = document.createElement('li');
-          li.textContent = `${key}: ${value}`;
+          const local = new Date(ts);
+          const hh = local.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          li.textContent = `${hh}: ${Number(val).toFixed(1)} °C`;
           list.appendChild(li);
         });
       } catch (error) {
@@ -51,18 +115,18 @@
       }
     }
 
-    // Fetch and render past accuracy metrics
+    // Fetch and render past accuracy metrics (show latest 10)
     async function fetchAccuracy() {
       try {
-        const res = await fetch(ACCURACY_ENDPOINT);
+        const res = await fetch(`${ACCURACY_ENDPOINT}?cb=${Date.now()}`);
         const data = await res.json();
         document.getElementById('acc-loading').style.display = 'none';
         const list = document.getElementById('acc-list');
         list.innerHTML = '';
-        // Expect data shape: [ { date: 'YYYY-MM-DD', mae: 1.2, mse: 2.3 }, ... ]
-        data.forEach(item => {
+        const items = Array.isArray(data) ? data.slice(-10) : [];
+        items.forEach(item => {
           const li = document.createElement('li');
-          li.textContent = `${item.date}: MAE = ${item.mae}, MSE = ${item.mse}`;
+          li.textContent = `${item.date}: MAE = ${Number(item.mae).toFixed(2)} °C, MSE = ${Number(item.mse).toFixed(2)}`;
           list.appendChild(li);
         });
       } catch (error) {
@@ -73,6 +137,7 @@
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
+      fetchSummary();
       fetchPrediction();
       fetchAccuracy();
     });
