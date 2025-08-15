@@ -39,26 +39,26 @@
     <ul id="pred-list" class="list-disc list-inside"></ul>
   </div>
 
-    <!-- Model Accuracy Section -->
-    <div id="accuracy" class="bg-white rounded shadow p-4">
-      <h2 class="text-2xl font-semibold mb-2">Past Model Accuracy</h2>
-      <p id="acc-loading">Loading...</p>
-      <ul id="acc-list" class="list-disc list-inside"></ul>
-    </div>
-  </div>
-
-  <!-- Model Details Section -->
+    <!-- Model Details Section -->
     <div id="model-info" class="bg-white rounded shadow p-4 mb-4">
       <h2 class="text-2xl font-semibold mb-2">Model Details</h2>
       <p id="model-loading">Loading...</p>
       <ul id="model-list" class="list-disc list-inside text-sm"></ul>
     </div>
 
+    <!-- Model Accuracy Section -->
+    <div id="accuracy" class="bg-white rounded shadow p-4">
+      <h2 class="text-2xl font-semibold mb-2">Model Accuracy</h2>
+      <div class="text-4xl font-bold" id="acc-percent">—</div>
+      <p class="text-xs text-gray-600" id="acc-meta">Loading…</p>
+    </div>
+  </div>
+
   <script>
     // Endpoints for static JSON files (GitHub Pages-friendly)
     const POINT_ENDPOINT      = 'prediction_point.json';
     const PREDICTION_ENDPOINT = 'prediction.json';
-    const ACCURACY_ENDPOINT   = 'accuracy.json';
+    const ACCURACY_ENDPOINT   = 'accuracy_overall.json';
 
     // Helpers
     function fmtLocalTime(ts) {
@@ -135,23 +135,22 @@
       }
     }
 
-    // Fetch and render past accuracy metrics (show latest 10)
+    // Fetch and render single-number overall accuracy
     async function fetchAccuracy() {
       try {
         const res = await fetch(`${ACCURACY_ENDPOINT}?cb=${Date.now()}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        document.getElementById('acc-loading').style.display = 'none';
-        const list = document.getElementById('acc-list');
-        list.innerHTML = '';
-        const items = Array.isArray(data) ? data.slice(-10) : [];
-        items.forEach(item => {
-          const li = document.createElement('li');
-          li.textContent = `${item.date}: MAE = ${Number(item.mae).toFixed(2)} °C, MSE = ${Number(item.mse).toFixed(2)}`;
-          list.appendChild(li);
-        });
+        const p = (data.accuracy_percent != null) ? data.accuracy_percent.toFixed(1) + '%' : '—';
+        const days = data.n_days || 0;
+        const when = data.updated_at ? new Date(data.updated_at).toLocaleString() : '—';
+        const defn = data.definition || '';
+        document.getElementById('acc-percent').textContent = p;
+        document.getElementById('acc-meta').textContent = `Based on ${days} day(s). Updated ${when}. ${defn}`;
       } catch (error) {
-        document.getElementById('acc-loading').textContent = 'Error loading accuracy.';
-        console.error(error);
+        console.error('Accuracy overall error:', error);
+        document.getElementById('acc-percent').textContent = '—';
+        document.getElementById('acc-meta').textContent = 'No accuracy available yet.';
       }
     }
 

@@ -2,7 +2,6 @@ import requests
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from sqlalchemy import false
 from tensorflow.keras import layers
 from typing import List
 import json
@@ -837,46 +836,21 @@ def update_accuracy_from_history(cache_file: str,
         json.dump(daily_percents, f, indent=2)
     print(f"[Accuracy] Overall accuracy: {overall:.1f}% over {len(daily_percents)} day(s)")
 
-def save_accuracy(model, X_val, y_val, df, split, seq_len, output_file='accuracy.json', stride: int = 1, temp_mean: float = None, temp_std: float = None):
+def save_accuracy(*args, **kwargs):
+    """Deprecated: legacy accuracy.json removed. Update single-number accuracy for the site.
+    This writes only accuracy_overall.json based on history_predictions.json and actuals in
+    historical_data.csv. Left in place so older calls don't break.
     """
-    Computes MAE and MSE for the first forecast hour over the validation set,
-    maps each to its timestamp, and writes a list of dicts to output_file.
-    """
-    # Predict full horizon for all validation windows
-    val_preds = model.predict(X_val)
-    # Determine horizon length
-    horizon = val_preds.shape[1] if val_preds.ndim > 1 else 1
-    # Compute per-step errors and squared errors
-    if temp_mean is not None and temp_std is not None:
-        # Denormalize to Celsius
-        val_preds_c = val_preds * temp_std + temp_mean
-        y_val_c = y_val * temp_std + temp_mean
-        errors = np.abs(val_preds_c - y_val_c)
-        mses = errors ** 2
-    else:
-        errors = np.abs(val_preds - y_val)
-        mses = errors ** 2
-
-    # Compute corresponding timestamps
-    # End-of-input index for each window i in validation set (i counted from 0 within val)
-    # Global window index = split + i; end position = seq_len - 1 + (split + i) * stride
-    end_positions = [seq_len - 1 + (split + i) * stride for i in range(X_val.shape[0])]
-    val_times = df.index[end_positions]
-
-    # Build history list for each validation sample and each forecast hour
-    history_list = []
-    for i, t0 in enumerate(val_times):
-        for h in range(horizon):
-            t = t0 + pd.Timedelta(hours=h+1)
-            history_list.append({
-                'date': t.strftime('%Y-%m-%dT%H:%M:%S'),
-                'mae': float(errors[i, h] if horizon > 1 else errors[i]),
-                'mse': float(mses[i, h] if horizon > 1 else mses[i])
-            })
-
-    # Write out JSON
-    with open(output_file, 'w') as f:
-        json.dump(history_list, f, indent=2)
+    try:
+        update_accuracy_from_history(
+            cache_file=kwargs.get("cache_file", "historical_data.csv"),
+            history_file="history_predictions.json",
+            overall_file="accuracy_overall.json",
+            timezone="Europe/Berlin",
+        )
+        print("[Accuracy] accuracy_overall.json updated.")
+    except Exception as e:
+        print(f"[Accuracy] Skipped updating overall accuracy: {e}")
 
 def summarize_cache(cache_file: str = "historical_data.csv"):
     """
@@ -1073,12 +1047,7 @@ if __name__ == "__main__":
         output_file='prediction.json',
         point_file='prediction_point.json'
     )
-    save_accuracy(
-        model, X_val, y_val, df,
-        split, SEQ_LEN,
-        output_file='accuracy.json', stride=24,
-        temp_mean=temp_mean, temp_std=temp_std
-    )
+    # (Obsolete: legacy accuracy.json output removed)
     # Update single-number accuracy (vs persistence baseline) from saved history
     update_accuracy_from_history(
         cache_file=cache_file,
