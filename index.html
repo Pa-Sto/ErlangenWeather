@@ -9,7 +9,7 @@
 </head>
 <body class="bg-gray-100 text-gray-900">
   <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-4">City Weather Predictions</h1>
+    <h1 class="text-3xl font-bold mb-4">Weather Predictions Erlangen V0</h1>
 
     <!-- Next Day Forecast Section -->
     <div id="prediction" class="bg-white rounded shadow p-4 mb-4">
@@ -67,6 +67,14 @@
         weekday: 'short', month: 'short', day: 'numeric',
         hour: '2-digit', minute: '2-digit'
       });
+    }
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     // Fetch and render summary (forecast day + max/min/mean)
@@ -167,15 +175,24 @@
           items.push(`Training data: ${span[0] || '—'} → ${span[1] || '—'} (${info.training_data.source || ''})`);
         }
         if (info.input) {
-          const feats = Array.isArray(info.input.features) ? info.input.features.length : '—';
-          items.push(`Input: ${info.input.window_days}-day window • ${feats} features`);
+          const featNames = Array.isArray(info.input.features) ? info.input.features.map(String) : [];
+          const featCount = featNames.length ? featNames.length : '—';
+          const win = (info.input.window_days != null) ? info.input.window_days : '—';
+          items.push(`Input: ${win}-day window • ${featCount} features`);
+          if (featNames.length) {
+            const namesHtml = featNames.map(n => `<code>${escapeHtml(n)}</code>`).join(', ');
+            items.push(`<details><summary class="cursor-pointer underline">Feature names</summary><div class="mt-1 text-xs leading-relaxed">${namesHtml}</div></details>`);
+          }
         }
         if (info.output) items.push(`Output: ${info.output}`);
         if (info.architecture) {
           const a = info.architecture;
           items.push(`Architecture: ${a.type} • d_model=${a.d_model}, layers=${a.layers}, heads=${a.heads}`);
         }
-        if (info.location) items.push(`Location: lat ${info.location.lat}, lon ${info.location.lon}`);
+        if (info.location) {
+          const city = info.location.city ? `city ${info.location.city} ` : '';
+          items.push(`Location: ${city}lat ${info.location.lat}, lon ${info.location.lon}`);
+        }
         list.innerHTML = items.map(t => `<li>${t}</li>`).join('');
       } catch (e) {
         console.error('Model info error:', e);

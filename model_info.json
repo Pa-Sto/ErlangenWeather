@@ -12,5 +12,5 @@
   },
   "output": "Next 24 hourly temperature_2m (°C)",
   "architecture": { "type": "Transformer encoder (CLS)", "d_model": 64, "layers": 2, "heads": 4 },
-  "location": { "City": "Erlangen","lat": 49.59, "lon": 11.00 }
+  "location": { "city": "Erlangen","lat": 49.59, "lon": 11.00 }
 }
