@@ -1,0 +1,15 @@
+{
+  "lat": 49.59,
+  "lon": 11.0,
+  "units": "C",
+  "horizon_hours": 24,
+  "start_time": "2025-08-14T23:00:00",
+  "forecast_day": "2025-08-15",
+  "forecast_day_name": "Friday",
+  "generated_at": "2025-08-15T18:42:22Z",
+  "max_temp_c": 31.542652130126953,
+  "max_time": "2025-08-15T15:00:00",
+  "min_temp_c": 18.32650375366211,
+  "min_time": "2025-08-15T06:00:00",
+  "mean_temp_c": 25.492544174194336
+}
