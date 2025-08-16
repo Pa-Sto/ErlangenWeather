@@ -9,35 +9,35 @@
 </head>
 <body class="bg-gray-100 text-gray-900">
   <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-4">Weather Predictions Erlangen V0</h1>
+    <h1 class="text-3xl font-bold mb-4">Weather Predictions Erlangen</h1>
 
     <!-- Next Day Forecast Section -->
     <div id="prediction" class="bg-white rounded shadow p-4 mb-4">
-    <h2 class="text-2xl font-semibold mb-2">Next Day Forecast</h2>
-    <p class="text-sm text-gray-600 mb-2">
-      Forecast for <span id="forecast-day" class="font-medium">—</span>
-      • Updated <span id="generated-at">—</span>
-    </p>
-    <p class="mb-2">Window: <strong><span id="window-range">—</span></strong></p>
-    <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-      <div class="p-3 bg-rose-50 rounded">
-        <span class="block text-xs uppercase text-gray-500">Max</span>
-        <span id="max-temp" class="text-xl font-semibold">—</span>
-        <div id="max-time" class="text-xs text-gray-500">—</div>
+      <h2 class="text-2xl font-semibold mb-2">Next Day Forecast</h2>
+      <p class="text-sm text-gray-600 mb-2">
+        Forecast for <span id="forecast-day" class="font-medium">—</span>
+        • Updated <span id="generated-at">—</span>
+      </p>
+      <p class="mb-2">Window: <strong><span id="window-range">—</span></strong></p>
+      <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <div class="p-3 bg-rose-50 rounded">
+          <span class="block text-xs uppercase text-gray-500">Max</span>
+          <span id="max-temp" class="text-xl font-semibold">—</span>
+          <div id="max-time" class="text-xs text-gray-500">—</div>
+        </div>
+        <div class="p-3 bg-blue-50 rounded">
+          <span class="block text-xs uppercase text-gray-500">Min</span>
+          <span id="min-temp" class="text-xl font-semibold">—</span>
+          <div id="min-time" class="text-xs text-gray-500">—</div>
+        </div>
+        <div class="p-3 bg-emerald-50 rounded">
+          <span class="block text-xs uppercase text-gray-500">Mean</span>
+          <span id="mean-temp" class="text-xl font-semibold">—</span>
+        </div>
       </div>
-      <div class="p-3 bg-blue-50 rounded">
-        <span class="block text-xs uppercase text-gray-500">Min</span>
-        <span id="min-temp" class="text-xl font-semibold">—</span>
-        <div id="min-time" class="text-xs text-gray-500">—</div>
-      </div>
-      <div class="p-3 bg-emerald-50 rounded">
-        <span class="block text-xs uppercase text-gray-500">Mean</span>
-        <span id="mean-temp" class="text-xl font-semibold">—</span>
-      </div>
+      <p id="pred-loading">Loading hourly forecast…</p>
+      <ul id="pred-list" class="list-disc list-inside"></ul>
     </div>
-    <p id="pred-loading">Loading hourly forecast…</p>
-    <ul id="pred-list" class="list-disc list-inside"></ul>
-  </div>
 
     <!-- Model Details Section -->
     <div id="model-info" class="bg-white rounded shadow p-4 mb-4">
@@ -162,6 +162,7 @@
       }
     }
 
+    // Fetch and render Model Details (with feature count + names)
     async function fetchModelInfo() {
       try {
         const res = await fetch('model_info.json?cb=' + Date.now());
