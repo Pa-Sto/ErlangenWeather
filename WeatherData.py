@@ -435,18 +435,19 @@ def prepare_training_data_days(
     df: pd.DataFrame,
     seq_days: int,
     label_days: int,
-    train_ratio: float = 0.8
+    train_ratio: float = 0.8,
+    require_train: bool = True,
 ):
     """
     Day-aligned preparation:
     - Sort & impute gaps
-    - Scale using TRAIN portion only (rows up to end of the train day split)
+    - Scale using TRAIN portion only when require_train is True and enough train days exist
+      otherwise fall back to scaling on the full data (predict-only robustness)
     - Build windows that use `seq_days` consecutive full days as input and the
       next `label_days` full day(s) (24*label_days hours) as labels.
     Returns: X_train, X_val, y_train, y_val, split_windows, mean, std
     """
     df = df.sort_index()
-
     df = df.interpolate(method="time").ffill().bfill()
 
     idx = df.index
@@ -458,15 +459,22 @@ def prepare_training_data_days(
         raise ValueError("No full 24h days found in index; ensure hourly continuity.")
 
     num_days = len(starts)
-    # Determine the number of training days
-    train_days = int(num_days * train_ratio)
-    if train_days < (seq_days + label_days):
-        raise ValueError("Not enough days in training split to form at least one window.")
+    total_needed_days = seq_days + label_days
 
-    # Compute scaling stats using rows up to the end of the training days
-    last_train_day_start = starts[train_days - 1]
-    last_train_row = last_train_day_start + 24 - 1  # end of that day
-    train_vals_rows = values[: last_train_row + 1]
+    # Determine training days (for scaling) and whether we have enough for strict train split
+    train_days = int(num_days * train_ratio)
+    have_strict_train = train_days >= total_needed_days
+
+    # Select scaling rows
+    if require_train and have_strict_train:
+        # scale on rows up to the end of the last training day
+        last_train_day_start = starts[train_days - 1]
+        last_train_row = last_train_day_start + 24 - 1
+        train_vals_rows = values[: last_train_row + 1]
+    else:
+        # robust fallback: scale on full available data (predict-only or small datasets)
+        train_vals_rows = values
+
     mean = np.nanmean(train_vals_rows, axis=0)
     std = np.nanstd(train_vals_rows, axis=0)
     std[std == 0] = 1e-6
@@ -474,8 +482,6 @@ def prepare_training_data_days(
 
     # Build day-aligned windows with stride 24
     X, y = [], []
-    # valid window starts are such that we have seq_days inputs and label_days labels
-    total_needed_days = seq_days + label_days
     for d in range(0, num_days - total_needed_days + 1):
         start_row = starts[d]
         in_end_row = start_row + seq_days * 24
@@ -486,11 +492,16 @@ def prepare_training_data_days(
     X = np.array(X)
     y = np.array(y)
 
-    # Number of training windows so that labels are strictly inside training span
-    train_windows = train_days - (seq_days + label_days) + 1
-    if train_windows < 0:
-        train_windows = 0
-    split_windows = train_windows
+    # Determine split_windows
+    if require_train and have_strict_train:
+        # Number of training windows so that labels are strictly inside training span
+        train_windows = train_days - total_needed_days + 1
+        if train_windows < 0:
+            train_windows = 0
+        split_windows = train_windows
+    else:
+        # Predict-only or small dataset: ensure at least one validation window when possible
+        split_windows = max(len(X) - 1, 0)
 
     return (
         X[:split_windows], X[split_windows:],
@@ -1082,7 +1093,7 @@ if __name__ == "__main__":
 
     # Prepare day-aligned training data (clean, scale-on-train, day windows)
     X_train, X_val, y_train, y_val, split, mean, std = prepare_training_data_days(
-        df, SEQ_DAYS, LABEL_DAYS, train_ratio=0.8
+        df, SEQ_DAYS, LABEL_DAYS, train_ratio=0.8, require_train=training
     )
     temp_mean = float(mean[0])
     temp_std = float(std[0])
