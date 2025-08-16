@@ -49,7 +49,7 @@ jobs:
       - name: Run prediction (no training)
         if: env.RUN_NOW == 'true'
         run: |
-          python WeatherData.py --predict-only --extend-to-present --cache-file historical_data.csv --lat 49.59 --lon 11.00
+          python WeatherData.py --predict-only source --forecast --past-days 10 --forecast-days 1 --extend-to-present --cache-file historical_data.csv --lat 49.59 --lon 11.00
 
       - name: Commit & push if changed
         if: env.RUN_NOW == 'true'

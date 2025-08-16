@@ -11,7 +11,9 @@ import time
 import sys
 import argparse
 from requests.adapters import HTTPAdapter
+
 from urllib3.util.retry import Retry
+from dateutil.tz import gettz
 
 # Earliest supported start date for Open-Meteo Archive API (reanalysis)
 
@@ -221,11 +223,11 @@ def extend_cache_to_present(
     show_progress: bool = True,
 ):
     """
-    Extend the local cache forward to 'today' (UTC) by downloading the missing
+    Extend the local cache forward to 'today' (local time) by downloading the missing
     date range from the last cached timestamp + 1 day up to today.
     If the cache does not exist or is empty, start from MIN_ARCHIVE_DATE.
     """
-    today = datetime.utcnow().date()
+    today = datetime.now(gettz(timezone)).date()
     if os.path.exists(cache_file) and os.path.getsize(cache_file) > 0:
         dfc = pd.read_csv(cache_file, index_col="time", parse_dates=["time"]).sort_index()
         if not dfc.empty:
@@ -248,6 +250,60 @@ def extend_cache_to_present(
         latitude, longitude, start, end, variables,
         timezone=timezone, cache_file=cache_file, show_progress=show_progress
     )
+def get_recent_forecast(
+    latitude: float,
+    longitude: float,
+    variables: List[str],
+    past_days: int = 10,
+    forecast_days: int = 1,
+    timezone: str = "Europe/Berlin",
+    retry: int = 3,
+    timeout: int = 20,
+) -> pd.DataFrame:
+    """
+    Fetches the last `past_days` and next `forecast_days` from Open-Meteo Forecast API.
+    This is near-real-time model analysis/forecast (more up-to-date than ERA5 archive).
+    Returns a DataFrame indexed by local time with the requested hourly variables.
+    """
+    base_url = "https://api.open-meteo.com/v1/forecast"
+    variables = normalize_hourly_variables(variables)
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "hourly": ",".join(variables),
+        "past_days": int(past_days),
+        "forecast_days": int(forecast_days),
+        "timezone": timezone,
+    }
+    session = requests.Session()
+    retries = Retry(
+        total=5,
+        backoff_factor=1.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    headers = {"User-Agent": "ErlangenWeather/1.0 (+https://github.com/Pa-Sto/ErlangenWeather)"}
+    for attempt in range(retry):
+        r = session.get(base_url, params=params, headers=headers, timeout=(5, timeout))
+        try:
+            r.raise_for_status()
+            break
+        except Exception as e:
+            if attempt == retry - 1:
+                raise
+    data = r.json().get("hourly", {})
+    times = data.get("time", [])
+    cols = {}
+    for v in variables:
+        vals = data.get(v)
+        cols[v] = vals if vals is not None else [np.nan] * len(times)
+    df = pd.DataFrame(cols, index=pd.to_datetime(times))
+    df.index.name = "time"
+    return df
 
 
 from tensorflow.keras.models import load_model
@@ -599,7 +655,8 @@ def save_prediction(
     lat: float = None,
     lon: float = None,
     output_file: str = 'prediction.json',
-    point_file: str = 'prediction_point.json'
+    point_file: str = 'prediction_point.json',
+    timezone: str = 'Europe/Berlin',
 ):
     """
     Generates next-horizon prediction from the last window of X_val,
@@ -621,9 +678,10 @@ def save_prediction(
 
     # Metadata for display
     generated_at = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-    forecast_day_dt = (base_time + pd.Timedelta(days=1)).date()
+    now_local = datetime.now(gettz(timezone))
+    forecast_day_dt = now_local.date()
     forecast_day = forecast_day_dt.isoformat()
-    forecast_day_name = (base_time + pd.Timedelta(days=1)).strftime('%A')
+    forecast_day_name = now_local.strftime('%A')
 
     # Build mapping
     pred_dict = {}
@@ -740,10 +798,12 @@ def _ensure_cache_has_days(cache_file: str, latitude: float, longitude: float, d
 def update_accuracy_from_history(cache_file: str,
                                  history_file: str = "history_predictions.json",
                                  overall_file: str = "accuracy_overall.json",
-                                 timezone: str = "Europe/Berlin"):
+                                 timezone: str = "Europe/Berlin",
+                                 min_age_days: int = 5):
     """Compute a single accuracy % using skill vs persistence baseline.
     accuracy_percent = mean over days of max(0, 100 * (1 - MSE_model / MSE_persistence)).
     Persistence forecast uses actual(T-24h) for each hour.
+    Only evaluates days at least `min_age_days` before today (to allow archive latency).
     """
     if not (os.path.exists(history_file) and os.path.getsize(history_file) > 0):
         print("[Accuracy] No history_predictions.json yet; skipping overall accuracy.")
@@ -752,9 +812,10 @@ def update_accuracy_from_history(cache_file: str,
         history = json.load(f)
     if not history:
         return
-    # Ensure we only evaluate past days
-    today = datetime.utcnow().date().isoformat()
-    eval_entries = [h for h in history if h.get("date", "") < today]
+    # Only evaluate days at least min_age_days before today (local time)
+    today_local = datetime.now(gettz(timezone)).date()
+    cutoff = (today_local - timedelta(days=min_age_days)).isoformat()
+    eval_entries = [h for h in history if h.get("date", "") <= cutoff]
     if not eval_entries:
         print("[Accuracy] No past days to evaluate yet.")
         return
@@ -946,6 +1007,10 @@ if __name__ == "__main__":
     parser.add_argument("--cache-file", type=str, default="historical_data.csv", help="Path to CSV cache file")
     parser.add_argument("--lat", type=float, default=49.59)
     parser.add_argument("--lon", type=float, default=11.00)
+    parser.add_argument("--source", type=str, choices=["archive", "forecast"], default="archive",
+                        help="Data source for feature dataframe: 'archive' (ERA5, delayed) or 'forecast' (past_days, near real-time)")
+    parser.add_argument("--past-days", type=int, default=10, help="When --source=forecast, include this many past days")
+    parser.add_argument("--forecast-days", type=int, default=1, help="When --source=forecast, include this many future days")
     args = parser.parse_args()
 
     training = not args.predict_only
@@ -985,7 +1050,17 @@ if __name__ == "__main__":
             cache_file=cache_file,
             show_progress=True
         )
-    df = pd.read_csv(cache_file, index_col='time', parse_dates=['time']).sort_index()
+    if args.source == "archive":
+        df = pd.read_csv(cache_file, index_col='time', parse_dates=['time']).sort_index()
+        print("[Source] Using ARCHIVE (ERA5) cache for training/prediction.")
+    else:
+        print("[Source] Using FORECAST past_days window for near-real-time features.")
+        df = get_recent_forecast(
+            LAT, LON, vars,
+            past_days=max(1, args.past_days),
+            forecast_days=max(0, args.forecast_days),
+            timezone="Europe/Berlin",
+        )
     df = add_time_features(df)
     df = add_derived_features(df)
 
@@ -1045,7 +1120,8 @@ if __name__ == "__main__":
         temp_mean=temp_mean, temp_std=temp_std,
         lat=LAT, lon=LON,
         output_file='prediction.json',
-        point_file='prediction_point.json'
+        point_file='prediction_point.json',
+        timezone='Europe/Berlin',
     )
     # (Obsolete: legacy accuracy.json output removed)
     # Update single-number accuracy (vs persistence baseline) from saved history
@@ -1054,4 +1130,5 @@ if __name__ == "__main__":
         history_file="history_predictions.json",
         overall_file="accuracy_overall.json",
         timezone="Europe/Berlin",
+        min_age_days=5,
     )
