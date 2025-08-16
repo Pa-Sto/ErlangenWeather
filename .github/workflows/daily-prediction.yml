@@ -25,7 +25,7 @@ jobs:
             echo "RUN_NOW=true" >> $GITHUB_ENV
             echo "It's 00:01 in Berlin. Proceeding."
           else
-            echo "RUN_NOW=true" >> $GITHUB_ENV
+            echo "RUN_NOW=false" >> $GITHUB_ENV
             echo "Not 00:01 in Berlin. Skipping subsequent steps."
           fi
 
@@ -51,7 +51,7 @@ jobs:
         run: |
           python WeatherData.py \
             --predict-only \
-            --source forecast --past-days 10 --forecast-days 1 \
+            --source forecast --past-days 20 --forecast-days 1 \
             --extend-to-present \
             --cache-file historical_data.csv \
             --lat 49.59 --lon 11.00
