@@ -1,6 +1,6 @@
 {
-  "accuracy_percent": 32.93744265704953,
-  "n_days": 15,
-  "updated_at": "2025-10-20T23:16:30Z",
+  "accuracy_percent": 34.55651320275127,
+  "n_days": 16,
+  "updated_at": "2025-10-21T22:23:15Z",
   "definition": "100*(1 - MSE_model/MSE_persistence) clipped to [0,100]"
 }
