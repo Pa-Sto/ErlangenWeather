@@ -3,13 +3,13 @@
   "lon": 11.0,
   "units": "C",
   "horizon_hours": 24,
-  "start_time": "2025-10-22T23:00:00",
-  "forecast_day": "2025-10-23",
-  "forecast_day_name": "Thursday",
-  "generated_at": "2025-10-22T23:15:22Z",
-  "max_temp_c": 13.510103225708008,
-  "max_time": "2025-10-23T15:00:00",
-  "min_temp_c": 11.521119117736816,
-  "min_time": "2025-10-23T23:00:00",
-  "mean_temp_c": 12.524925231933594
+  "start_time": "2025-10-23T23:00:00",
+  "forecast_day": "2025-10-24",
+  "forecast_day_name": "Friday",
+  "generated_at": "2025-10-23T22:25:26Z",
+  "max_temp_c": 10.925359725952148,
+  "max_time": "2025-10-24T16:00:00",
+  "min_temp_c": 9.59647274017334,
+  "min_time": "2025-10-24T23:00:00",
+  "mean_temp_c": 10.33202075958252
 }
