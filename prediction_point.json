@@ -6,10 +6,10 @@
   "start_time": "2025-11-19T23:00:00",
   "forecast_day": "2025-11-20",
   "forecast_day_name": "Thursday",
-  "generated_at": "2025-11-19T23:17:39Z",
-  "max_temp_c": 3.305126190185547,
+  "generated_at": "2025-11-20T22:24:36Z",
+  "max_temp_c": 3.3070597648620605,
   "max_time": "2025-11-20T16:00:00",
-  "min_temp_c": 0.6890578269958496,
+  "min_temp_c": 0.6908783912658691,
   "min_time": "2025-11-20T07:00:00",
-  "mean_temp_c": 1.7569838762283325
+  "mean_temp_c": 1.7576907873153687
 }
