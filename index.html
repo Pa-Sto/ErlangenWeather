@@ -182,10 +182,16 @@
         document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
         document.getElementById('acc').textContent = acc ? `${acc.accuracy_percent.toFixed(0)}%` : '—';
 
-        // Group into calendar days and render first three days side-by-side
+        // Group into calendar days and render three days starting at model start_time
         const byDay = groupByDate(pred);
         const daysEl = document.getElementById('days');
-        const dayKeys = Array.from(byDay.keys()).slice(0,3);
+
+        let startDateKey = (point.start_time || '').slice(0,10); // YYYY-MM-DD
+        let dayKeys = Array.from(byDay.keys());
+        if (startDateKey) {
+          dayKeys = dayKeys.filter(d => d >= startDateKey);
+        }
+        dayKeys = dayKeys.slice(0,3);
 
         // Build summaries from point.daily_summaries if dates match
         const summaries = new Map();
