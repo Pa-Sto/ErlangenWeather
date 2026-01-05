@@ -51,7 +51,7 @@ jobs:
         run: |
           python WeatherData.py \
             --predict-only \
-            --source forecast --past-days 20 --forecast-days 1 \
+            --source forecast --past-days 20 --forecast-days 3 \
             --extend-to-present \
             --cache-file historical_data.csv \
             --lat 49.59 --lon 11.00
