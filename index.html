@@ -1,214 +1,229 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weather Prediction Erlangen</title>
-  <!-- Tailwind CSS via CDN for styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ErlangenWeather — 3-Day Forecast</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+    }
+    html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    a { color: var(--accent); text-decoration: none; }
+    header { padding: 20px; border-bottom: 1px solid #1f2937; display:flex; align-items:center; justify-content: space-between; gap: 16px; }
+    header h1 { margin:0; font-size: 20px; font-weight: 700; }
+    header .meta { font-size: 14px; color: var(--muted); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 12px 14px; }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .kpi .value { font-weight: 700; font-size: 18px; margin-top: 4px; }
+
+    .days { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    @media (max-width: 980px) { .days { grid-template-columns: 1fr; } }
+
+    .day-card { background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; overflow: hidden; display:flex; flex-direction:column; }
+    .day-head { padding: 14px 16px; border-bottom: 1px solid #1f2937; display:flex; align-items:baseline; justify-content: space-between; gap: 12px; }
+    .day-head .date { font-weight: 700; }
+    .day-head .stats { color: var(--muted); font-size: 14px; }
+
+    .hours { padding: 10px 14px 14px; display:grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+    @media (max-width: 540px) { .hours { grid-template-columns: 1fr; } }
+    .hour-row { display:flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #1f2937; padding: 6px 0; }
+    .hour-row:last-child { border-bottom: 0; }
+    .hour-row strong { font-weight: 700; }
+    .sparkline { padding: 8px 14px 0; }
+    .sparkline svg { width: 100%; height: 64px; display: block; }
+    .sparkline path.line { stroke: var(--accent); }
+    .sparkline line.mean { stroke: var(--muted); stroke-dasharray: 3 3; }
+    .sparkline circle.dot { fill: var(--accent); }
+
+    .section { margin-top: 22px; }
+    .panel { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px 16px; }
+    .small { font-size: 14px; color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-900">
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-4">Weather Predictions Erlangen</h1>
+<body>
+  <header>
+    <h1>🌤️ ErlangenWeather — 3-Day Forecast</h1>
+    <div class="meta" id="updated">Loading…</div>
+  </header>
 
-    <!-- Next Day Forecast Section -->
-    <div id="prediction" class="bg-white rounded shadow p-4 mb-4">
-      <h2 class="text-2xl font-semibold mb-2">Next Day Forecast</h2>
-      <p class="text-sm text-gray-600 mb-2">
-        Forecast for <span id="forecast-day" class="font-medium">—</span>
-        • Updated <span id="generated-at">—</span>
-      </p>
-      <p class="mb-2">Window: <strong><span id="window-range">—</span></strong></p>
-      <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-        <div class="p-3 bg-rose-50 rounded">
-          <span class="block text-xs uppercase text-gray-500">Max</span>
-          <span id="max-temp" class="text-xl font-semibold">—</span>
-          <div id="max-time" class="text-xs text-gray-500">—</div>
-        </div>
-        <div class="p-3 bg-blue-50 rounded">
-          <span class="block text-xs uppercase text-gray-500">Min</span>
-          <span id="min-temp" class="text-xl font-semibold">—</span>
-          <div id="min-time" class="text-xs text-gray-500">—</div>
-        </div>
-        <div class="p-3 bg-emerald-50 rounded">
-          <span class="block text-xs uppercase text-gray-500">Mean</span>
-          <span id="mean-temp" class="text-xl font-semibold">—</span>
-        </div>
-      </div>
-      <p id="pred-loading">Loading hourly forecast…</p>
-      <ul id="pred-list" class="list-disc list-inside"></ul>
+  <div class="container">
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">Overall Accuracy</div><div class="value" id="acc">—</div></div>
+      <div class="kpi"><div class="label">Forecast Start</div><div class="value" id="start">—</div></div>
+      <div class="kpi"><div class="label">Horizon</div><div class="value" id="horizon">—</div></div>
     </div>
 
-    <!-- Model Details Section -->
-    <div id="model-info" class="bg-white rounded shadow p-4 mb-4">
-      <h2 class="text-2xl font-semibold mb-2">Model Details</h2>
-      <p id="model-loading">Loading...</p>
-      <ul id="model-list" class="list-disc list-inside text-sm"></ul>
-    </div>
+    <div class="days" id="days"></div>
 
-    <!-- Model Accuracy Section -->
-    <div id="accuracy" class="bg-white rounded shadow p-4">
-      <h2 class="text-2xl font-semibold mb-2">Model Accuracy</h2>
-      <div class="text-4xl font-bold" id="acc-percent">—</div>
-      <p class="text-xs text-gray-600" id="acc-meta">Loading…</p>
+    <div class="section">
+      <div class="panel small" id="modelInfo">Model info loading…</div>
     </div>
   </div>
 
   <script>
-    // Endpoints for static JSON files (GitHub Pages-friendly)
-    const POINT_ENDPOINT      = 'prediction_point.json';
-    const PREDICTION_ENDPOINT = 'prediction.json';
-    const ACCURACY_ENDPOINT   = 'accuracy_overall.json';
+    async function loadJSON(url) {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(\`Failed to load \${url}: \${r.status}\`);
+      return r.json();
+    }
 
-    // Helpers
-    function fmtLocalTime(ts) {
-      const d = new Date(ts);
-      return d.toLocaleString(undefined, {
-        weekday: 'short', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+    function groupByDate(series) {
+      const entries = Object.entries(series).map(([ts, v]) => ({ ts, v: Number(v) }))
+        .sort((a,b) => a.ts.localeCompare(b.ts));
+      const groups = new Map();
+      for (const {ts, v} of entries) {
+        const d = ts.slice(0,10);
+        if (!groups.has(d)) groups.set(d, []);
+        groups.get(d).push({ ts, v });
+      }
+      return groups; // Map(date -> [{ts,v}])
+    }
+
+    function fmtTime(ts) {
+      // ts like 'YYYY-MM-DDTHH:MM:SS'
+      return ts.slice(11,16);
+    }
+
+    function weekdayName(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { weekday: 'long' });
+    }
+
+    function statFromSeries(list) {
+      const vals = list.map(x => x.v);
+      const max = Math.max(...vals), min = Math.min(...vals);
+      const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+      const tmax = list[vals.indexOf(max)].ts;
+      const tmin = list[vals.indexOf(min)].ts;
+      return { max, min, mean, tmax, tmin };
+    }
+
+    function sparklineSVG(list, stats) {
+      const w = 320, h = 64, pad = 6;
+      const vals = list.map(p => p.v);
+      const n = vals.length || 1;
+      const min = Math.min(...vals);
+      const max = Math.max(...vals);
+      const range = (max - min) || 1;
+      const x = (i) => pad + ((w - 2*pad) * (i / (n - 1 || 1)));
+      const y = (v) => pad + ((h - 2*pad) * (1 - ((v - min) / range)));
+
+      // Build the path for the series
+      let d = "";
+      list.forEach((p, i) => {
+        const X = x(i), Y = y(p.v);
+        d += (i ? "L" : "M") + X + " " + Y + " ";
       });
-    }
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+
+      // Markers and mean line
+      const idxMax = vals.indexOf(max);
+      const idxMin = vals.indexOf(min);
+      const mean = (stats && typeof stats.mean === 'number') ? stats.mean : (vals.reduce((a,b)=>a+b,0)/n);
+      const yMean = y(mean);
+
+      return `
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <line class="mean" x1="${pad}" x2="${w - pad}" y1="${yMean}" y2="${yMean}" stroke-width="1"/>
+        <path class="line" d="${d}" fill="none" stroke-width="2"/>
+        <circle class="dot" cx="${x(idxMax)}" cy="${y(max)}" r="2.5"/>
+        <circle class="dot" cx="${x(idxMin)}" cy="${y(min)}" r="2.5"/>
+      </svg>`;
     }
 
-    // Fetch and render summary (forecast day + max/min/mean)
-    async function fetchSummary() {
+    function renderDayCard(dateStr, list, summary) {
+      const stats = summary || statFromSeries(list);
+      const wrap = document.createElement('div');
+      wrap.className = 'day-card';
+      wrap.innerHTML = `
+        <div class="day-head">
+          <div class="date">${weekdayName(dateStr)}, ${dateStr}</div>
+          <div class="stats">
+            <span>Max: <strong>${stats.max.toFixed(1)}°C</strong></span>
+            &nbsp;·&nbsp; Min: <strong>${stats.min.toFixed(1)}°C</strong>
+            &nbsp;·&nbsp; Mean: ${stats.mean.toFixed(1)}°C
+          </div>
+        </div>
+        <div class="sparkline"></div>
+        <div class="hours"></div>
+      `;
+      const hours = wrap.querySelector('.hours');
+      const spark = wrap.querySelector('.sparkline');
+      spark.innerHTML = sparklineSVG(list, stats);
+      for (const {ts, v} of list) {
+        const row = document.createElement('div');
+        row.className = 'hour-row';
+        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${v.toFixed(1)}°C</span>`;
+        hours.appendChild(row);
+      }
+      return wrap;
+    }
+
+    (async () => {
       try {
-        const res = await fetch(`${POINT_ENDPOINT}?cb=${Date.now()}`);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
+        const [pred, point, acc, info] = await Promise.all([
+          loadJSON('prediction.json'),
+          loadJSON('prediction_point.json'),
+          loadJSON('accuracy_overall.json').catch(()=>null),
+          loadJSON('model_info.json').catch(()=>null),
+        ]);
 
-        // Day & updated time
-        const dayName = data.forecast_day_name || '';
-        const dayISO  = data.forecast_day || '';
-        document.getElementById('forecast-day').textContent = dayName && dayISO ? `${dayName} (${dayISO})` : (dayISO || '—');
-        document.getElementById('generated-at').textContent = data.generated_at ? fmtLocalTime(data.generated_at) : '—';
+        // KPI header
+        document.getElementById('updated').textContent = `Updated: ${point.generated_at || '—'}`;
+        document.getElementById('start').textContent = point.start_time || '—';
+        document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
+        document.getElementById('acc').textContent = acc ? `${acc.accuracy_percent.toFixed(0)}%` : '—';
 
-        // Summary cards
-        const maxTemp = (data.max_temp_c != null) ? `${data.max_temp_c.toFixed(1)} °C` : '—';
-        const minTemp = (data.min_temp_c != null) ? `${data.min_temp_c.toFixed(1)} °C` : '—';
-        const meanTemp = (data.mean_temp_c != null) ? `${data.mean_temp_c.toFixed(1)} °C` : '—';
-        document.getElementById('max-temp').textContent = maxTemp;
-        document.getElementById('min-temp').textContent = minTemp;
-        document.getElementById('mean-temp').textContent = meanTemp;
-        document.getElementById('max-time').textContent = data.max_time ? fmtLocalTime(data.max_time) : '—';
-        document.getElementById('min-time').textContent = data.min_time ? fmtLocalTime(data.min_time) : '—';
+        // Group into calendar days and render first three days side-by-side
+        const byDay = groupByDate(pred);
+        const daysEl = document.getElementById('days');
+        const dayKeys = Array.from(byDay.keys()).slice(0,3);
+
+        // Build summaries from point.daily_summaries if dates match
+        const summaries = new Map();
+        if (point.daily_summaries && Array.isArray(point.daily_summaries)) {
+          for (const s of point.daily_summaries) summaries.set(s.date, s);
+        }
+
+        for (const d of dayKeys) {
+          const list = byDay.get(d);
+          const s = summaries.has(d) ? {
+            max: Number(summaries.get(d).max_temp_c),
+            min: Number(summaries.get(d).min_temp_c),
+            mean: Number(summaries.get(d).mean_temp_c),
+            tmax: summaries.get(d).max_time,
+            tmin: summaries.get(d).min_time,
+          } : null;
+          daysEl.appendChild(renderDayCard(d, list, s));
+        }
+
+        // Model info panel
+        const mi = document.getElementById('modelInfo');
+        if (info) {
+          const lines = [];
+          if (info.model_name) lines.push(`<strong>${info.model_name}</strong>`);
+          if (info.architecture) lines.push(`Architecture: ${info.architecture}`);
+          if (info.hparams) lines.push(`HParams: ${info.hparams}`);
+          if (info.training_data) lines.push(`Training data: ${info.training_data}`);
+          if (info.features_count) lines.push(`Features: ${info.features_count}`);
+          if (info.feature_names && info.feature_names.length) lines.push(`Feature names: <span class="mono">${info.feature_names.join(', ')}</span>`);
+          mi.innerHTML = lines.join('<br/>');
+        } else {
+          mi.textContent = 'Model info unavailable.';
+        }
       } catch (err) {
-        console.error('Summary error:', err);
+        console.error(err);
+        document.getElementById('updated').textContent = 'Failed to load data';
       }
-    }
-
-    // Fetch and render next-day hourly prediction
-    async function fetchPrediction() {
-      try {
-        const res = await fetch(`${PREDICTION_ENDPOINT}?cb=${Date.now()}`);
-        const data = await res.json();
-        document.getElementById('pred-loading').style.display = 'none';
-        const list = document.getElementById('pred-list');
-        list.innerHTML = '';
-
-        // data is an object: { 'YYYY-MM-DDTHH:MM:SS': valueC, ... }
-        const entries = Object.entries(data)
-          .map(([ts, val]) => ({ ts, val }))
-          .sort((a, b) => new Date(a.ts) - new Date(b.ts));
-
-        if (entries.length) {
-          const first = new Date(entries[0].ts);
-          const last  = new Date(entries[entries.length - 1].ts);
-          const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          document.getElementById('window-range').textContent = `${fmt(first)} → ${fmt(last)}`;
-        }
-
-        entries.forEach(({ ts, val }) => {
-          const li = document.createElement('li');
-          const local = new Date(ts);
-          const hh = local.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-          const timeEl = document.createElement('strong');
-          timeEl.textContent = hh; // bold timestamp
-
-          li.appendChild(timeEl);
-          li.append(`: ${Number(val).toFixed(1)} °C`);
-          list.appendChild(li);
-        });
-      } catch (error) {
-        document.getElementById('pred-loading').textContent = 'Error loading predictions.';
-        console.error(error);
-      }
-    }
-
-    // Fetch and render single-number overall accuracy
-    async function fetchAccuracy() {
-      try {
-        const res = await fetch(`${ACCURACY_ENDPOINT}?cb=${Date.now()}`);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        const p = (data.accuracy_percent != null) ? data.accuracy_percent.toFixed(1) + '%' : '—';
-        const days = data.n_days || 0;
-        const when = data.updated_at ? new Date(data.updated_at).toLocaleString() : '—';
-        const defn = data.definition || '';
-        document.getElementById('acc-percent').textContent = p;
-        document.getElementById('acc-meta').textContent = `Based on ${days} day(s). Updated ${when}. ${defn}`;
-      } catch (error) {
-        console.error('Accuracy overall error:', error);
-        document.getElementById('acc-percent').textContent = '—';
-        document.getElementById('acc-meta').textContent = 'No accuracy available yet.';
-      }
-    }
-
-    // Fetch and render Model Details (with feature count + names)
-    async function fetchModelInfo() {
-      try {
-        const res = await fetch('model_info.json?cb=' + Date.now());
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const info = await res.json();
-        document.getElementById('model-loading').style.display = 'none';
-        const list = document.getElementById('model-list');
-        const items = [];
-        if (info.training_data) {
-          const span = info.training_data.span || [null, null];
-          items.push(`Training data: ${span[0] || '—'} → ${span[1] || '—'} (${info.training_data.source || ''})`);
-        }
-        if (info.input) {
-          const featNames = Array.isArray(info.input.features) ? info.input.features.map(String) : [];
-          const featCount = featNames.length ? featNames.length : '—';
-          const win = (info.input.window_days != null) ? info.input.window_days : '—';
-          items.push(`Input: ${win}-day window • ${featCount} features`);
-          if (featNames.length) {
-            const namesHtml = featNames.map(n => `<code>${escapeHtml(n)}</code>`).join(', ');
-            items.push(`<details><summary class="cursor-pointer underline">Feature names</summary><div class="mt-1 text-xs leading-relaxed">${namesHtml}</div></details>`);
-          }
-        }
-        if (info.output) items.push(`Output: ${info.output}`);
-        if (info.architecture) {
-          const a = info.architecture;
-          items.push(`Architecture: ${a.type} • d_model=${a.d_model}, layers=${a.layers}, heads=${a.heads}`);
-        }
-        if (info.location) {
-          const city = info.location.city ? `city ${info.location.city} ` : '';
-          items.push(`Location: ${city}lat ${info.location.lat}, lon ${info.location.lon}`);
-        }
-        list.innerHTML = items.map(t => `<li>${t}</li>`).join('');
-      } catch (e) {
-        console.error('Model info error:', e);
-        const m = document.getElementById('model-loading');
-        if (m) m.textContent = 'No model info available.';
-      }
-    }
-
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchSummary();
-      fetchPrediction();
-      fetchAccuracy();
-      fetchModelInfo();
-    });
+    })();
   </script>
 </body>
 </html>

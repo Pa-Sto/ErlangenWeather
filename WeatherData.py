@@ -1087,7 +1087,7 @@ if __name__ == "__main__":
 
     # windows: input last 10 days (10*24h), predict next 1 day (24h) temperatures
     SEQ_DAYS = 10
-    LABEL_DAYS = 1
+    LABEL_DAYS = 3
     SEQ_LEN = SEQ_DAYS * 24
     HORIZON = LABEL_DAYS * 24
 
