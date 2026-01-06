@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, date
 import time
 import sys
 import argparse
+import subprocess
 from requests.adapters import HTTPAdapter
 
 from urllib3.util.retry import Retry
@@ -25,6 +26,12 @@ OPEN_METEO_HOURLY_ALIASES = {
     "windspeed_10m": "windspeed_10m",
     "winddirection_10m": "winddirection_10m",
 }
+
+# ---- Forecast targets & window config (global) ----
+TARGETS = ["temperature_2m", "rain", "cloudcover"]  # 3-target training/prediction
+NUM_TARGETS = len(TARGETS)
+SEQ_DAYS = 10
+LABEL_DAYS = 3
 
 def normalize_hourly_variables(variables: List[str]) -> List[str]:
     normalized = [OPEN_METEO_HOURLY_ALIASES.get(v, v) for v in variables]
@@ -147,6 +154,49 @@ def _print_progress(iteration: int, total: int, prefix: str = "[Archive]", lengt
     sys.stdout.flush()
     if iteration >= total:
         sys.stdout.write("\n")
+
+def _get_git_info():
+    commit = os.environ.get("GITHUB_SHA")
+    branch = os.environ.get("GITHUB_REF_NAME") or os.environ.get("GITHUB_REF")
+    if commit:
+        return {"commit": commit, "branch": branch}
+    try:
+        c = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode().strip()
+        try:
+            b = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.DEVNULL).decode().strip()
+        except Exception:
+            b = None
+        return {"commit": c, "branch": b}
+    except Exception:
+        return {"commit": None, "branch": branch}
+
+def _append_model_log(entry: dict, jsonl_path: str = "model_log.txt", md_path: str = "MODEL_LOG.md"):
+    ts = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    entry = dict(entry)
+    entry.setdefault("timestamp", ts)
+    # JSONL append
+    try:
+        with open(jsonl_path, "a") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[Log] Could not append {jsonl_path}: {e}")
+    # Markdown append
+    try:
+        with open(md_path, "a") as f:
+            f.write(f"\n### {entry.get('timestamp')} — {entry.get('event','event')}\n\n")
+            order = [
+                "tag","note","source","targets","seq_days","label_days","horizon_hours","n_features",
+                "n_train_windows","n_val_windows","best_val_loss","final_val_loss","epochs_run","train_seconds",
+                "overall_accuracy","d_model","num_heads","d_ff","num_layers","commit","branch"
+            ]
+            for k in order:
+                if k in entry and entry[k] is not None:
+                    v = entry[k]
+                    if isinstance(v, (list, dict)):
+                        v = json.dumps(v, ensure_ascii=False)
+                    f.write(f"- **{k}**: {v}\n")
+    except Exception as e:
+        print(f"[Log] Could not append {md_path}: {e}")
 
 def update_cache_with_historical(
     latitude: float,
@@ -437,6 +487,7 @@ def prepare_training_data_days(
     label_days: int,
     train_ratio: float = 0.8,
     require_train: bool = True,
+    targets: List[str] = None,
 ):
     """
     Day-aligned preparation:
@@ -482,13 +533,22 @@ def prepare_training_data_days(
 
     # Build day-aligned windows with stride 24
     X, y = [], []
+    # determine target indices in the current column order
+    if targets is None:
+        targets = ["temperature_2m"]
+    target_idx = []
+    for t in targets:
+        if t not in df.columns:
+            raise ValueError(f"Target '{t}' not found in dataframe columns")
+        target_idx.append(int(df.columns.get_loc(t)))
     for d in range(0, num_days - total_needed_days + 1):
         start_row = starts[d]
         in_end_row = start_row + seq_days * 24
         lbl_end_row = in_end_row + label_days * 24
         X.append(values[start_row:in_end_row])
-        # predict temperature (column 0) for next day(s)
-        y.append(values[in_end_row:lbl_end_row, 0])
+        # next label_days full days for all targets → shape (H, C)
+        Yh = values[in_end_row:lbl_end_row][:, target_idx]
+        y.append(Yh)
     X = np.array(X)
     y = np.array(y)
 
@@ -507,7 +567,8 @@ def prepare_training_data_days(
         X[:split_windows], X[split_windows:],
         y[:split_windows], y[split_windows:],
         split_windows,
-        mean, std
+        mean, std,
+        target_idx,
     )
 
 def prepare_training_data(
@@ -612,17 +673,54 @@ def load_model_safe(path: str):
     Tries with custom_objects first, then falls back to compile=False for inference-only.
     """
     try:
-        return load_model(path, custom_objects={"weighted_mse": weighted_mse})
+        return load_model(path, custom_objects={"weighted_mse": weighted_mse, "weighted_mse_multi": weighted_mse_multi})
     except Exception as e1:
         print(f"[Model] load_model with custom_objects failed: {e1}\n[Model] Retrying with compile=False …")
         return load_model(path, compile=False)
 
+def weighted_mse_multi(y_true, y_pred):
+    """Time-decay + per-channel weighting that adapts to TARGETS length.
+    y_* shape: (batch, H, C)
+    """
+    H = tf.shape(y_pred)[1]
+    C = tf.shape(y_pred)[2]
+    # time weights from 1.0 → 0.5 across horizon
+    w_t = tf.linspace(1.0, 0.5, H)      # (H,)
+    w_t = tf.reshape(w_t, (1, H, 1))    # (1,H,1)
+    # channel weights based on declared TARGETS
+    name2w = {"temperature_2m": 1.0, "precipitation": 3.0, "rain": 3.0, "cloudcover": 0.5}
+    w_list = [name2w.get(n, 1.0) for n in TARGETS]
+    w_c = tf.constant(w_list, dtype=tf.float32)
+    w_c = tf.reshape(w_c, (1, 1, -1))   # (1,1,Tlen)
+
+    # Align to actual prediction channel count C (slice or pad with ones)
+    tlen_static = w_c.shape[-1]
+    if tlen_static is not None and y_pred.shape[-1] is not None:
+        c_static = int(y_pred.shape[-1])
+        tlen = int(tlen_static)
+        if tlen >= c_static:
+            w_c_sel = w_c[..., :c_static]
+        else:
+            pad = c_static - tlen
+            w_pad = tf.ones((1, 1, pad), dtype=tf.float32)
+            w_c_sel = tf.concat([w_c, w_pad], axis=-1)
+    else:
+        # fully dynamic fallback
+        pad = tf.math.maximum(C - tf.shape(w_c)[-1], 0)
+        w_pad = tf.ones((1, 1, pad), dtype=tf.float32)
+        w_c_sel = tf.concat([w_c[..., :C], w_pad], axis=-1)
+
+    # final weight = time * channel
+    w = w_t * w_c_sel
+    se = tf.square(y_true - y_pred)
+    return tf.reduce_mean(w * se)
 # -- 6. Build the time-series Transformer model --------------------------
 
 def build_transformer_model(
     seq_len: int,
     feature_dim: int,
     window_out: int,
+    num_targets: int = 1,
     d_model: int = 64,
     num_heads: int = 4,
     d_ff: int = 128,
@@ -643,12 +741,13 @@ def build_transformer_model(
     # CLS pooling
     x = layers.Lambda(lambda z: z[:, 0, :])(x)
 
-    # final MLP to forecast next window_out temps
-    outputs = layers.Dense(window_out)(x)
+    # final MLP → (window_out * num_targets) then reshape to (H, C)
+    x = layers.Dense(window_out * num_targets)(x)
+    outputs = layers.Reshape((window_out, num_targets))(x)
 
-    model = tf.keras.Model(inputs=inputs, outputs=outputs, name="ts_transformer")
+    model = tf.keras.Model(inputs=inputs, outputs=outputs, name="ts_transformer_multi")
     opt = tf.keras.optimizers.Adam(learning_rate=3e-4, clipnorm=1.0)
-    model.compile(optimizer=opt, loss=weighted_mse, metrics=["mae"])
+    model.compile(optimizer=opt, loss=weighted_mse_multi)
     return model
 
 # -- 7. Example end-to-end -----------------------------------------------
@@ -661,8 +760,9 @@ def save_prediction(
     seq_len: int,
     split: int,
     stride: int,
-    temp_mean: float = None,
-    temp_std: float = None,
+    mean: np.ndarray = None,
+    std: np.ndarray = None,
+    target_idx: List[int] = None,
     lat: float = None,
     lon: float = None,
     output_file: str = 'prediction.json',
@@ -670,65 +770,134 @@ def save_prediction(
     timezone: str = 'Europe/Berlin',
 ):
     """
-    Generates next-horizon prediction from the last window of X_val,
-    then writes a timestamp->value mapping to output_file.
+    Predicts next horizon with the trained model. Supports multi-output (H, C) where
+    channels correspond to TARGETS. Writes:
+      - prediction_multi.json : {ts: {temp_c, precip_mm, rain_mm, cloudcover_pct}}
+      - prediction.json       : {ts: temp_c}  (for backward compatibility)
+      - prediction_point.json : summary for temperature channel
+      - updates history_predictions.json
     """
     last_window = X_val[-1:]
-    next_pred = model.predict(last_window)[0]
-    # Denormalize if stats provided
-    if temp_mean is not None and temp_std is not None:
-        next_vals = next_pred * temp_std + temp_mean
-    else:
-        next_vals = next_pred
-    horizon = len(next_vals)
+    # --- Compatibility shim: align features with model's expected input width ---
+    try:
+        expected_feat = int(model.input_shape[-1])
+    except Exception:
+        expected_feat = last_window.shape[-1]
+    current_feat = int(last_window.shape[-1])
+    if current_feat != expected_feat:
+        if current_feat > expected_feat:
+            print(f"[Compat] Truncating features from {current_feat} to {expected_feat} to match model input.")
+            last_window = last_window[..., :expected_feat]
+        else:
+            pad = expected_feat - current_feat
+            print(f"[Compat] Padding features from {current_feat} to {expected_feat} with zeros to match model input.")
+            last_window = np.pad(last_window, ((0,0),(0,0),(0,pad)), mode='constant')
+    # (summary block removed here; will create summary after all variables are defined)
+    print(f"[Predict] Using input window shape: {last_window.shape}, model expects: (None, None, {expected_feat})")
+    # --------------------------------------------------------------------------
+    pred = model.predict(last_window)[0]
+    # pred shape (H,) old models → upgrade to (H,1)
+    if pred.ndim == 1:
+        pred = pred[:, None]
+    H, C = pred.shape
+    # --- Denormalize & align output channels to TARGETS order ---
+    T = len(target_idx) if target_idx is not None else 1
+    # Initialize output matrix in TARGETS channel order
+    den = np.zeros((H, T), dtype=np.float32)
 
-    # Align timestamps to the end of the last validation input window (day stride)
+    if mean is None or std is None or not target_idx:
+        # No stats: best effort mapping
+        if C >= 1:
+            # Map first channel to temperature if available
+            try:
+                temp_ci = TARGETS.index("temperature_2m")
+            except ValueError:
+                temp_ci = 0
+            den[:, temp_ci] = pred[:, 0]
+        # others remain zero
+    else:
+        if C == T:
+            # 1:1 mapping by channel index
+            for ci, col_i in enumerate(target_idx):
+                den[:, ci] = pred[:, ci] * std[col_i] + mean[col_i]
+        elif C == 1:
+            # Legacy model: single temperature channel
+            try:
+                temp_ci = TARGETS.index("temperature_2m")
+            except ValueError:
+                temp_ci = 0
+            temp_col = target_idx[temp_ci]
+            den[:, temp_ci] = pred[:, 0] * std[temp_col] + mean[temp_col]
+            # other targets remain zero (precip/rain/cloud)
+        else:
+            # Fallback: map min(C, T) channels in order
+            m = min(C, T)
+            for ci in range(m):
+                col_i = target_idx[ci]
+                den[:, ci] = pred[:, ci] * std[col_i] + mean[col_i]
+            # remaining channels stay zero
+
+    # Replace any NaNs with zeros to avoid downstream JSON issues
+    den = np.nan_to_num(den, nan=0.0)
+    # ------------------------------------------------------------------
+
+    # Align base time to end of last input window
     last_val_i = X_val.shape[0] - 1
     end_idx = (seq_len - 1) + (split + last_val_i) * stride
     base_time = df.index[end_idx]
 
-    # Metadata for display
     generated_at = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     now_local = datetime.now(gettz(timezone))
     forecast_day_dt = now_local.date()
     forecast_day = forecast_day_dt.isoformat()
     forecast_day_name = now_local.strftime('%A')
 
-    # Build mapping
-    pred_dict = {}
-    for i, val in enumerate(next_vals):
-        t = base_time + pd.Timedelta(hours=i+1)
-        pred_dict[t.strftime('%Y-%m-%dT%H:%M:%S')] = float(val)
+    multi = {}
+    temp_only = {}
+    for i in range(H):
+        ts = (base_time + pd.Timedelta(hours=i+1)).strftime('%Y-%m-%dT%H:%M:%S')
+        # Map by TARGETS order
+        vals = { TARGETS[ci]: float(den[i, ci]) for ci in range(min(C, len(TARGETS))) }
+        entry = {
+            "temp_c": float(vals.get("temperature_2m", np.nan)),
+            "precip_mm": max(0.0, float(vals.get("precipitation", 0.0))),
+            "rain_mm": max(0.0, float(vals.get("rain", 0.0))),
+            "cloudcover_pct": float(vals.get("cloudcover", np.nan)),
+        }
+        multi[ts] = entry
+        temp_only[ts] = entry["temp_c"]
 
-    # Write series JSON (Celsius values)
+    with open('prediction_multi.json', 'w') as f:
+        json.dump(multi, f, indent=2)
     with open(output_file, 'w') as f:
-        json.dump(pred_dict, f, indent=2)
+        json.dump(temp_only, f, indent=2)
 
-    # Also write a summary point file: max/min/mean over the next day
-    arr = np.array(next_vals)
-    argmax = int(np.argmax(arr))
-    argmin = int(np.argmin(arr))
-    t_max = (base_time + pd.Timedelta(hours=argmax+1)).strftime('%Y-%m-%dT%H:%M:%S')
-    t_min = (base_time + pd.Timedelta(hours=argmin+1)).strftime('%Y-%m-%dT%H:%M:%S')
+    # Temperature summary point
+    temps = np.array([v["temp_c"] for v in multi.values()], dtype=float)
+    argmax = int(np.nanargmax(temps))
+    argmin = int(np.nanargmin(temps))
+    t_keys = list(multi.keys())
+    t_max = t_keys[argmax]
+    t_min = t_keys[argmin]
     point_summary = {
         'lat': lat,
         'lon': lon,
         'units': 'C',
-        'horizon_hours': horizon,
-        'start_time': base_time.strftime('%Y-%m-%dT%H:%M:%S'),
+        'horizon_hours': H,
+        'start_time': (base_time).strftime('%Y-%m-%dT%H:%M:%S'),
         'forecast_day': forecast_day,
         'forecast_day_name': forecast_day_name,
         'generated_at': generated_at,
-        'max_temp_c': float(arr[argmax]),
+        'max_temp_c': float(temps[argmax]),
         'max_time': t_max,
-        'min_temp_c': float(arr[argmin]),
+        'min_temp_c': float(temps[argmin]),
         'min_time': t_min,
-        'mean_temp_c': float(arr.mean())
+        'mean_temp_c': float(np.nanmean(temps)),
     }
     with open(point_file, 'w') as f:
         json.dump(point_summary, f, indent=2)
 
-    # Persist this forecast for later verification
+    # Persist temp-only series for accuracy
     try:
         os.makedirs("predictions", exist_ok=True)
         daily_payload = {
@@ -739,19 +908,29 @@ def save_prediction(
                 "lat": lat, "lon": lon,
                 "units": "C"
             },
-            "series": pred_dict
+            "series": temp_only
         }
         daily_path = os.path.join("predictions", f"pred_{forecast_day}.json")
         with open(daily_path, "w") as f:
             json.dump(daily_payload, f, indent=2)
-        # Update consolidated history file
-        _append_history_prediction("history_predictions.json", forecast_day, pred_dict, generated_at)
+        _append_history_prediction("history_predictions.json", forecast_day, temp_only, generated_at)
     except Exception as e:
         print(f"[Warn] Could not write daily/history prediction files: {e}")
 
-    print('Next day Prediction (°C) written to', output_file)
+    # Build a summary for logging/diagnostics
+    summary = {
+        "horizon_hours": H,
+        "n_channels": C,
+        "start_time": (base_time).strftime('%Y-%m-%dT%H:%M:%S'),
+        "generated_at": generated_at,
+    }
+
+    print(f"[Predict] Wrote {H} hourly values × {C} channel(s) spanning {(H//24)} day(s).")
+    print('Prediction (temp only) written to', output_file)
+    print('Multi-output prediction written to prediction_multi.json')
     print('Summary point written to', point_file)
 
+    return summary
 
 # -- Persist history + compute single-number accuracy ----------------------
 
@@ -797,7 +976,8 @@ def _ensure_cache_has_days(cache_file: str, latitude: float, longitude: float, d
                 latitude, longitude,
                 start=d, end=d,
                 variables=["temperature_2m", "relativehumidity_2m", "pressure_msl",
-                           "windspeed_10m", "winddirection_10m", "cloudcover", "shortwave_radiation"],
+                           "windspeed_10m", "winddirection_10m", "cloudcover", "shortwave_radiation",
+                           "precipitation", "rain"],
                 timezone=timezone,
                 cache_file=cache_file,
                 show_progress=False
@@ -1022,6 +1202,8 @@ if __name__ == "__main__":
                         help="Data source for feature dataframe: 'archive' (ERA5, delayed) or 'forecast' (past_days, near real-time)")
     parser.add_argument("--past-days", type=int, default=10, help="When --source=forecast, include this many past days")
     parser.add_argument("--forecast-days", type=int, default=1, help="When --source=forecast, include this many future days")
+    parser.add_argument("--note", type=str, default=None, help="Freeform note to include in model logs")
+    parser.add_argument("--tag", type=str, default=None, help="Short tag or version label for this run")
     args = parser.parse_args()
 
     training = not args.predict_only
@@ -1034,7 +1216,8 @@ if __name__ == "__main__":
     # fetch & prep (with caching)
     vars = [
         "temperature_2m", "relativehumidity_2m", "pressure_msl",
-        "windspeed_10m", "winddirection_10m", "cloudcover", "shortwave_radiation"
+        "windspeed_10m", "winddirection_10m", "cloudcover", "shortwave_radiation",
+        "precipitation", "rain"
     ]
     if download_data and days > 30846 and not (args.absolute_start and args.absolute_end):
         print(f"[Warning] days={days} implies a very large download. Skipping auto-download. Set days smaller or provide absolute range.")
@@ -1072,6 +1255,42 @@ if __name__ == "__main__":
             forecast_days=max(0, args.forecast_days),
             timezone="Europe/Berlin",
         )
+
+    # --- Ensure all TARGETS columns exist in df; backfill if missing ---
+    missing_targets = [t for t in TARGETS if t not in df.columns]
+    if missing_targets:
+        if args.source == "archive":
+            # Backfill missing target columns from the archive for the df span
+            span_start = df.index.min().date().isoformat()
+            span_end = df.index.max().date().isoformat()
+            print(f"[Archive] Backfilling missing targets {missing_targets} for {span_start} → {span_end}")
+            try:
+                df_fill = get_historical_data(
+                    LAT, LON, span_start, span_end, missing_targets, timezone="Europe/Berlin"
+                )
+                # join new columns into df
+                df = df.join(df_fill[missing_targets], how="left")
+                # also persist in cache for future runs
+                if os.path.exists(cache_file) and os.path.getsize(cache_file) > 0:
+                    dfc = pd.read_csv(cache_file, index_col="time", parse_dates=["time"]).sort_index()
+                    dfc = dfc.join(df_fill[missing_targets], how="left")
+                    dfc.to_csv(cache_file)
+            except Exception as e:
+                print(f"[Archive] Could not backfill missing targets {missing_targets}: {e}")
+        else:
+            # For forecast source: re-fetch including the missing targets explicitly
+            print(f"[Forecast] Re-fetching to include missing targets {missing_targets}")
+            try:
+                df = get_recent_forecast(
+                    LAT, LON, normalize_hourly_variables(vars + missing_targets),
+                    past_days=max(1, args.past_days),
+                    forecast_days=max(0, args.forecast_days),
+                    timezone="Europe/Berlin",
+                )
+            except Exception as e:
+                print(f"[Forecast] Could not re-fetch with missing targets {missing_targets}: {e}")
+    # -------------------------------------------------------------------
+
     df = add_time_features(df)
     df = add_derived_features(df)
 
@@ -1086,24 +1305,25 @@ if __name__ == "__main__":
     #     print("[API availability] Could not determine earliest/latest via probe.")
 
     # windows: input last 10 days (10*24h), predict next 1 day (24h) temperatures
-    SEQ_DAYS = 10
-    LABEL_DAYS = 3
     SEQ_LEN = SEQ_DAYS * 24
     HORIZON = LABEL_DAYS * 24
 
-    # Prepare day-aligned training data (clean, scale-on-train, day windows)
-    X_train, X_val, y_train, y_val, split, mean, std = prepare_training_data_days(
-        df, SEQ_DAYS, LABEL_DAYS, train_ratio=0.8, require_train=training
+    X_train, X_val, y_train, y_val, split, mean, std, target_idx = prepare_training_data_days(
+        df, SEQ_DAYS, LABEL_DAYS, train_ratio=0.8, require_train=training, targets=TARGETS
     )
-    temp_mean = float(mean[0])
-    temp_std = float(std[0])
 
     if training:
-        # build & fit
+        # Explicit hyperparameters (also logged)
+        D_MODEL, N_HEADS, D_FF, N_LAYERS = 64, 4, 128, 2
         model = build_transformer_model(
             seq_len=SEQ_LEN,
             feature_dim=X_train.shape[-1],
-            window_out=HORIZON
+            window_out=HORIZON,
+            num_targets=NUM_TARGETS,
+            d_model=D_MODEL,
+            num_heads=N_HEADS,
+            d_ff=D_FF,
+            num_layers=N_LAYERS,
         )
         model.summary()
 
@@ -1111,24 +1331,57 @@ if __name__ == "__main__":
             tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True),
             tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.5, min_lr=1e-6),
         ]
-        model.fit(
+        t0 = time.time()
+        history = model.fit(
             X_train, y_train,
             validation_data=(X_val, y_val),
             epochs=100, batch_size=64,
             callbacks=callbacks,
             verbose=1
         )
+        train_seconds = int(time.time() - t0)
+
         # Save without optimizer state; we only need inference in CI / predict-only
         model.save("model", include_optimizer=False)
+
+        # ---- Log training event ----
+        hist = history.history
+        val_losses = hist.get("val_loss", [])
+        best_val = float(min(val_losses)) if val_losses else None
+        final_val = float(val_losses[-1]) if val_losses else None
+        epochs_run = int(len(hist.get("loss", [])))
+        git = _get_git_info()
+        _append_model_log({
+            "event": "train",
+            "tag": args.tag,
+            "note": args.note,
+            "source": args.source,
+            "targets": TARGETS,
+            "seq_days": SEQ_DAYS,
+            "label_days": LABEL_DAYS,
+            "horizon_hours": HORIZON,
+            "n_features": int(X_train.shape[-1]),
+            "n_train_windows": int(X_train.shape[0]),
+            "n_val_windows": int(X_val.shape[0]),
+            "best_val_loss": best_val,
+            "final_val_loss": final_val,
+            "epochs_run": epochs_run,
+            "train_seconds": train_seconds,
+            "d_model": D_MODEL,
+            "num_heads": N_HEADS,
+            "d_ff": D_FF,
+            "num_layers": N_LAYERS,
+            **git,
+        })
     else:
         if not os.path.exists("model"):
             raise SystemExit("[Model] No saved model found at 'model'. Train once locally (run without --predict-only) or commit the 'model/' directory.")
         model = load_model_safe("model")
-    # Save outputs via helper functions
-    save_prediction(
+    # Save outputs via helper functions and capture summary for logging
+    pred_summary = save_prediction(
         model, X_val, df,
         seq_len=SEQ_LEN, split=split, stride=24,
-        temp_mean=temp_mean, temp_std=temp_std,
+        mean=mean, std=std, target_idx=target_idx,
         lat=LAT, lon=LON,
         output_file='prediction.json',
         point_file='prediction_point.json',
@@ -1143,3 +1396,30 @@ if __name__ == "__main__":
         timezone="Europe/Berlin",
         min_age_days=5,
     )
+
+    # ---- Log prediction event ----
+    overall_acc = None
+    try:
+        with open("accuracy_overall.json", "r") as f:
+            overall_acc = float(json.load(f).get("accuracy_percent"))
+    except Exception:
+        pass
+    try:
+        git = _get_git_info()
+        _append_model_log({
+            "event": "predict",
+            "tag": args.tag,
+            "note": args.note,
+            "source": args.source,
+            "targets": TARGETS,
+            "seq_days": SEQ_DAYS,
+            "label_days": LABEL_DAYS,
+            "horizon_hours": pred_summary.get("horizon_hours") if isinstance(pred_summary, dict) else None,
+            "n_channels": pred_summary.get("n_channels") if isinstance(pred_summary, dict) else None,
+            "start_time": pred_summary.get("start_time") if isinstance(pred_summary, dict) else None,
+            "generated_at": pred_summary.get("generated_at") if isinstance(pred_summary, dict) else None,
+            "overall_accuracy": overall_acc,
+            **git,
+        })
+    except Exception as e:
+        print(f"[Log] Skipped writing prediction log: {e}")

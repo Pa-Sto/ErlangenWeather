@@ -25,7 +25,7 @@ jobs:
             echo "RUN_NOW=true" >> $GITHUB_ENV
             echo "It's 00:01 in Berlin. Proceeding."
           else
-            echo "RUN_NOW=true" >> $GITHUB_ENV
+            echo "RUN_NOW=false" >> $GITHUB_ENV
             echo "Not 00:01 in Berlin. Skipping subsequent steps."
           fi
 
@@ -61,7 +61,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@users.noreply.github.com"
-          git add historical_data.csv prediction.json prediction_point.json history_predictions.json accuracy_overall.json model_info.json || true
+          git add prediction.json prediction_multi.json prediction_point.json accuracy_overall.json history_predictions.json historical_data.csv model_info.json || true
           if ! git diff --cached --quiet; then
             git commit -m "Daily prediction update [skip ci]"
             git push

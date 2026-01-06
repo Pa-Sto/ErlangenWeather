@@ -76,16 +76,21 @@
       return r.json();
     }
 
-    function groupByDate(series) {
-      const entries = Object.entries(series).map(([ts, v]) => ({ ts, v: Number(v) }))
-        .sort((a,b) => a.ts.localeCompare(b.ts));
+    function groupByDateMulti(multi) {
+      // multi: { timestamp: { temp_c, rain_mm|precip_mm, cloudcover_pct } }
+      const entries = Object.entries(multi).map(([ts, obj]) => ({
+        ts,
+        temp: Number(obj.temp_c ?? obj.temperature_c ?? obj.temperature_2m ?? obj.temp ?? 0),
+        rain: Number(obj.rain_mm ?? obj.precip_mm ?? obj.precipitation ?? 0),
+        cloud: Number(obj.cloudcover_pct ?? obj.cloudcover ?? 0),
+      })).sort((a,b) => a.ts.localeCompare(b.ts));
       const groups = new Map();
-      for (const {ts, v} of entries) {
-        const d = ts.slice(0,10);
+      for (const e of entries) {
+        const d = e.ts.slice(0,10); // YYYY-MM-DD
         if (!groups.has(d)) groups.set(d, []);
-        groups.get(d).push({ ts, v });
+        groups.get(d).push(e);
       }
-      return groups; // Map(date -> [{ts,v}])
+      return groups; // Map(date -> [{ts,temp,rain,cloud}])
     }
 
     function fmtTime(ts) {
@@ -99,7 +104,7 @@
     }
 
     function statFromSeries(list) {
-      const vals = list.map(x => x.v);
+      const vals = list.map(x => x.temp);
       const max = Math.max(...vals), min = Math.min(...vals);
       const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
       const tmax = list[vals.indexOf(max)].ts;
@@ -109,7 +114,7 @@
 
     function sparklineSVG(list, stats) {
       const w = 320, h = 64, pad = 6;
-      const vals = list.map(p => p.v);
+      const vals = list.map(p => p.temp);
       const n = vals.length || 1;
       const min = Math.min(...vals);
       const max = Math.max(...vals);
@@ -120,7 +125,7 @@
       // Build the path for the series
       let d = "";
       list.forEach((p, i) => {
-        const X = x(i), Y = y(p.v);
+        const X = x(i), Y = y(p.temp);
         d += (i ? "L" : "M") + X + " " + Y + " ";
       });
 
@@ -137,6 +142,13 @@
         <circle class="dot" cx="${x(idxMax)}" cy="${y(max)}" r="2.5"/>
         <circle class="dot" cx="${x(idxMin)}" cy="${y(min)}" r="2.5"/>
       </svg>`;
+    }
+
+    function iconForHour(rain, cloud) {
+      if (rain > 0.2) return '🌧️';
+      if (cloud >= 70) return '☁️';
+      if (cloud >= 30) return '⛅';
+      return '☀️';
     }
 
     function renderDayCard(dateStr, list, summary) {
@@ -158,10 +170,11 @@
       const hours = wrap.querySelector('.hours');
       const spark = wrap.querySelector('.sparkline');
       spark.innerHTML = sparklineSVG(list, stats);
-      for (const {ts, v} of list) {
+      for (const {ts, temp, rain, cloud} of list) {
         const row = document.createElement('div');
         row.className = 'hour-row';
-        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${v.toFixed(1)}°C</span>`;
+        const icon = iconForHour(rain, cloud);
+        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${icon} ${temp.toFixed(1)}°C · ${rain.toFixed(1)} mm</span>`;
         hours.appendChild(row);
       }
       return wrap;
@@ -169,8 +182,8 @@
 
     (async () => {
       try {
-        const [pred, point, acc, info] = await Promise.all([
-          loadJSON('prediction.json'),
+        const [multi, point, acc, info] = await Promise.all([
+          loadJSON('prediction_multi.json'),
           loadJSON('prediction_point.json'),
           loadJSON('accuracy_overall.json').catch(()=>null),
           loadJSON('model_info.json').catch(()=>null),
@@ -183,7 +196,7 @@
         document.getElementById('acc').textContent = acc ? `${acc.accuracy_percent.toFixed(0)}%` : '—';
 
         // Group into calendar days and render three days starting at model start_time
-        const byDay = groupByDate(pred);
+        const byDay = groupByDateMulti(multi);
         const daysEl = document.getElementById('days');
 
         let startDateKey = (point.start_time || '').slice(0,10); // YYYY-MM-DD
