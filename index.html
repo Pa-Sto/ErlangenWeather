@@ -74,6 +74,8 @@
   </div>
 
   <script>
+    const RAIN_MIN = 0.05; // mm/h threshold below which we treat rain as zero
+
     async function loadJSON(url) {
       const r = await fetch(`${url}?v=${Date.now()}`, { cache: "no-store" });
       if (!r.ok) throw new Error('Failed to load ' + url + ': ' + r.status);
@@ -85,7 +87,7 @@
       const entries = Object.entries(multi).map(([ts, obj]) => ({
         ts,
         temp: Number(obj.temp_c ?? obj.temperature_c ?? obj.temperature_2m ?? obj.temp ?? 0),
-        rain: Number(obj.rain_mm ?? obj.precip_mm ?? obj.precipitation ?? 0),
+        rain: (v => (v < RAIN_MIN ? 0 : v))(Number(obj.rain_mm ?? obj.precip_mm ?? obj.precipitation ?? 0)),
         cloud: Number(obj.cloudcover_pct ?? obj.cloudcover ?? 0),
       })).sort((a,b) => a.ts.localeCompare(b.ts));
       const groups = new Map();
@@ -112,7 +114,7 @@
       const dd = String(d.getDate()).padStart(2,'0');
       const mm = String(d.getMonth()+1).padStart(2,'0');
       const yyyy = d.getFullYear();
-      return `${dd} ${mm} ${yyyy}`;
+      return `${dd}-${mm}-${yyyy}`;
     }
 
     function statFromSeries(list) {
@@ -154,18 +156,21 @@
 
     function rainBarsSVG(list) {
       const w = 320, h = 64, pad = 6, lpad = 38;
-      const vals = list.map(p => Math.max(0, Number(p.rain||0)));
+      const valsRaw = list.map(p => Math.max(0, Number(p.rain || 0)));
+      const vals = valsRaw.map(v => (v < RAIN_MIN ? 0 : v));
       const n = vals.length || 1;
-      const vmax = Math.max(1e-6, ...vals);
+      const vmax = Math.max(0, ...vals);
       const plotW = w - lpad - pad;
       const bw = plotW / n;
       let rects = '';
-      vals.forEach((v, i) => {
-        const hh = (v / vmax) * (h - 2*pad);
-        const x = lpad + i * bw;
-        const y = h - pad - hh;
-        rects += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 1)}" height="${Math.max(0, hh)}" />`;
-      });
+      if (vmax > 0) {
+        vals.forEach((v, i) => {
+          const hh = (v / vmax) * (h - 2*pad);
+          const x = lpad + i * bw;
+          const y = h - pad - hh;
+          rects += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 1)}" height="${Math.max(0, hh)}" />`;
+        });
+      }
       return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
         <text class="axis-text" x="${lpad-6}" y="${pad+10}" text-anchor="end">${vmax.toFixed(1)}</text>
@@ -188,7 +193,7 @@
       wrap.className = 'day-card';
       wrap.innerHTML = `
         <div class="day-head">
-          <div class="date">${weekdayName(dateStr)}, ${formatDMY(dateStr)}</div>
+          <div class="date"><span class="weekday">${weekdayName(dateStr)}</span><br><span class="mono">${formatDMY(dateStr)}</span></div>
           <div class="stats">
             Rain total: <strong>${sumRain.toFixed(1)} mm</strong>
             &nbsp;·&nbsp; Max: <strong>${stats.max.toFixed(1)}°C</strong>
@@ -213,7 +218,8 @@
         const row = document.createElement('div');
         row.className = 'hour-row';
         const icon = iconForHour(rain, cloud);
-        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${icon} ${temp.toFixed(1)}°C · ${rain.toFixed(1)} mm · ${Math.round(cloud)}% cloud</span>`;
+        const rainShown = (rain < RAIN_MIN ? 0 : rain);
+        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${icon} ${temp.toFixed(1)}°C · ${rainShown.toFixed(1)} mm · ${Math.round(cloud)}% cloud</span>`;
         hours.appendChild(row);
       }
       return wrap;
