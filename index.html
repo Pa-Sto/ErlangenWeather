@@ -11,6 +11,7 @@
       --text: #e5e7eb;
       --muted: #9ca3af;
       --accent: #60a5fa;
+      --rain: #f87171;
     }
     html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
     a { color: var(--accent); text-decoration: none; }
@@ -32,9 +33,8 @@
     .day-head .date { font-weight: 700; }
     .day-head .stats { color: var(--muted); font-size: 14px; }
 
-    .hours { padding: 10px 14px 14px; display:grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
-    @media (max-width: 540px) { .hours { grid-template-columns: 1fr; } }
-    .hour-row { display:flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #1f2937; padding: 6px 0; }
+    .hours { padding: 10px 14px 14px; display:grid; grid-template-columns: 1fr; gap: 6px; }
+    .hour-row { display:flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #1f2937; padding: 8px 0; column-gap: 12px; }
     .hour-row:last-child { border-bottom: 0; }
     .hour-row strong { font-weight: 700; }
     .sparkline { padding: 8px 14px 0; }
@@ -42,6 +42,7 @@
     .sparkline path.line { stroke: var(--accent); }
     .sparkline line.mean { stroke: var(--muted); stroke-dasharray: 3 3; }
     .sparkline circle.dot { fill: var(--accent); }
+    .sparkline.rain rect { fill: var(--rain); }
 
     .section { margin-top: 22px; }
     .panel { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px 16px; }
@@ -144,6 +145,22 @@
       </svg>`;
     }
 
+    function rainBarsSVG(list) {
+      const w = 320, h = 64, pad = 6;
+      const vals = list.map(p => Math.max(0, Number(p.rain||0)));
+      const n = vals.length || 1;
+      const vmax = Math.max(1e-6, ...vals);
+      const bw = (w - 2*pad) / n;
+      let rects = '';
+      vals.forEach((v, i) => {
+        const hh = (v / vmax) * (h - 2*pad);
+        const x = pad + i * bw;
+        const y = h - pad - hh;
+        rects += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 1)}" height="${Math.max(0, hh)}" />`;
+      });
+      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${rects}</svg>`;
+    }
+
     function iconForHour(rain, cloud) {
       if (rain > 0.2) return '🌧️';
       if (cloud >= 70) return '☁️';
@@ -164,12 +181,19 @@
             &nbsp;·&nbsp; Mean: ${stats.mean.toFixed(1)}°C
           </div>
         </div>
-        <div class="sparkline"></div>
+        <div class="sparkline temp">
+          <div class="small" style="margin-bottom:4px;">Temperature (°C)</div>
+        </div>
+        <div class="sparkline rain">
+          <div class="small" style="margin-bottom:4px;">Rain (mm/h)</div>
+        </div>
         <div class="hours"></div>
       `;
+      const sparkTemp = wrap.querySelector('.sparkline.temp');
+      const sparkRain = wrap.querySelector('.sparkline.rain');
+      sparkTemp.innerHTML += sparklineSVG(list, stats);
+      sparkRain.innerHTML += rainBarsSVG(list);
       const hours = wrap.querySelector('.hours');
-      const spark = wrap.querySelector('.sparkline');
-      spark.innerHTML = sparklineSVG(list, stats);
       for (const {ts, temp, rain, cloud} of list) {
         const row = document.createElement('div');
         row.className = 'hour-row';
