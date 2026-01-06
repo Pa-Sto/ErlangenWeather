@@ -31,7 +31,7 @@
 
     .day-card { background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; overflow: hidden; display:flex; flex-direction:column; }
     .day-head { padding: 14px 16px; border-bottom: 1px solid #1f2937; display:flex; align-items:baseline; justify-content: space-between; gap: 12px; }
-    .day-head .date { font-weight: 700; }
+    .day-head .date { font-weight: 700; white-space: nowrap; }
     .day-head .stats { color: var(--muted); font-size: 14px; }
 
     .hours { padding: 10px 14px 14px; display:grid; grid-template-columns: 1fr; gap: 6px; }
@@ -193,7 +193,7 @@
       wrap.className = 'day-card';
       wrap.innerHTML = `
         <div class="day-head">
-          <div class="date"><span class="weekday">${weekdayName(dateStr)}</span><br><span class="mono">${formatDMY(dateStr)}</span></div>
+          <div class="date"><span class="weekday">${weekdayName(dateStr)}</span>, <span class="mono">${formatDMY(dateStr)}</span></div>
           <div class="stats">
             Rain total: <strong>${sumRain.toFixed(1)} mm</strong>
             &nbsp;·&nbsp; Max: <strong>${stats.max.toFixed(1)}°C</strong>
