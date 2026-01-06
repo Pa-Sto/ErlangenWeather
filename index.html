@@ -174,7 +174,7 @@
         const row = document.createElement('div');
         row.className = 'hour-row';
         const icon = iconForHour(rain, cloud);
-        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${icon} ${temp.toFixed(1)}°C · ${rain.toFixed(1)} mm</span>`;
+        row.innerHTML = `<strong class="mono">${fmtTime(ts)}</strong> <span>${icon} ${temp.toFixed(1)}°C · ${rain.toFixed(1)} mm · ${Math.round(cloud)}% cloud</span>`;
         hours.appendChild(row);
       }
       return wrap;
