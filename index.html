@@ -44,6 +44,8 @@
     .sparkline line.mean { stroke: var(--muted); stroke-dasharray: 3 3; }
     .sparkline.temp circle.dot { fill: var(--temp); }
     .sparkline.rain rect { fill: var(--rain); }
+    .axis-text { fill: var(--muted); font-size: 11px; }
+    .axis-line { stroke: #374151; }
 
     .section { margin-top: 22px; }
     .panel { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px 16px; }
@@ -105,6 +107,14 @@
       return d.toLocaleDateString(undefined, { weekday: 'long' });
     }
 
+    function formatDMY(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd} ${mm} ${yyyy}`;
+    }
+
     function statFromSeries(list) {
       const vals = list.map(x => x.temp);
       const max = Math.max(...vals), min = Math.min(...vals);
@@ -115,51 +125,53 @@
     }
 
     function sparklineSVG(list, stats) {
-      const w = 320, h = 64, pad = 6;
+      const w = 320, h = 64, pad = 6, lpad = 38;
       const vals = list.map(p => p.temp);
       const n = vals.length || 1;
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       const range = (max - min) || 1;
-      const x = (i) => pad + ((w - 2*pad) * (i / (n - 1 || 1)));
+      const x = (i) => lpad + ((w - lpad - pad) * (i / (n - 1 || 1)));
       const y = (v) => pad + ((h - 2*pad) * (1 - ((v - min) / range)));
 
-      // Build the path for the series
+      // series path
       let d = "";
-      list.forEach((p, i) => {
-        const X = x(i), Y = y(p.temp);
-        d += (i ? "L" : "M") + X + " " + Y + " ";
-      });
+      list.forEach((p, i) => { const X = x(i), Y = y(p.temp); d += (i ? "L" : "M") + X + " " + Y + " "; });
 
-      // Markers and mean line
-      const idxMax = vals.indexOf(max);
-      const idxMin = vals.indexOf(min);
+      // stats
       const mean = (stats && typeof stats.mean === 'number') ? stats.mean : (vals.reduce((a,b)=>a+b,0)/n);
       const yMean = y(mean);
 
       return `
       <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-        <line class="mean" x1="${pad}" x2="${w - pad}" y1="${yMean}" y2="${yMean}" stroke-width="1"/>
+        <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
+        <text class="axis-text" x="${lpad-6}" y="${y(max)+4}" text-anchor="end">${max.toFixed(1)}</text>
+        <text class="axis-text" x="${lpad-6}" y="${y(min)+4}" text-anchor="end">${min.toFixed(1)}</text>
+        <line class="mean" x1="${lpad}" x2="${w - pad}" y1="${yMean}" y2="${yMean}" stroke-width="1"/>
         <path class="line" d="${d}" fill="none" stroke-width="2"/>
-        <circle class="dot" cx="${x(idxMax)}" cy="${y(max)}" r="2.5"/>
-        <circle class="dot" cx="${x(idxMin)}" cy="${y(min)}" r="2.5"/>
       </svg>`;
     }
 
     function rainBarsSVG(list) {
-      const w = 320, h = 64, pad = 6;
+      const w = 320, h = 64, pad = 6, lpad = 38;
       const vals = list.map(p => Math.max(0, Number(p.rain||0)));
       const n = vals.length || 1;
       const vmax = Math.max(1e-6, ...vals);
-      const bw = (w - 2*pad) / n;
+      const plotW = w - lpad - pad;
+      const bw = plotW / n;
       let rects = '';
       vals.forEach((v, i) => {
         const hh = (v / vmax) * (h - 2*pad);
-        const x = pad + i * bw;
+        const x = lpad + i * bw;
         const y = h - pad - hh;
         rects += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 1)}" height="${Math.max(0, hh)}" />`;
       });
-      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${rects}</svg>`;
+      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
+        <text class="axis-text" x="${lpad-6}" y="${pad+10}" text-anchor="end">${vmax.toFixed(1)}</text>
+        <text class="axis-text" x="${lpad-6}" y="${h-pad}" text-anchor="end">0</text>
+        ${rects}
+      </svg>`;
     }
 
     function iconForHour(rain, cloud) {
@@ -176,15 +188,16 @@
       wrap.className = 'day-card';
       wrap.innerHTML = `
         <div class="day-head">
-          <div class="date">${weekdayName(dateStr)}, ${dateStr}</div>
+          <div class="date">${weekdayName(dateStr)}, ${formatDMY(dateStr)}</div>
           <div class="stats">
-            <span>Max: <strong>${stats.max.toFixed(1)}°C</strong></span>
+            Rain total: <strong>${sumRain.toFixed(1)} mm</strong>
+            &nbsp;·&nbsp; Max: <strong>${stats.max.toFixed(1)}°C</strong>
             &nbsp;·&nbsp; Min: <strong>${stats.min.toFixed(1)}°C</strong>
             &nbsp;·&nbsp; Mean: ${stats.mean.toFixed(1)}°C
           </div>
         </div>
         <div class="sparkline temp">
-          <div class="small" style="margin-bottom:4px;">Rain total: <strong>${sumRain.toFixed(1)} mm</strong> · Temperature (°C)</div>
+          <div class="small" style="margin-bottom:4px;">Temperature (°C)</div>
         </div>
         <div class="sparkline rain">
           <div class="small" style="margin-bottom:4px;">Rain (mm/h)</div>
