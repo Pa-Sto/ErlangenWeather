@@ -71,7 +71,7 @@
 
   <script>
     async function loadJSON(url) {
-      const r = await fetch(url, { cache: "no-store" });
+      const r = await fetch(`${url}?v=${Date.now()}`, { cache: "no-store" });
       if (!r.ok) throw new Error('Failed to load ' + url + ': ' + r.status);
       return r.json();
     }
@@ -182,12 +182,31 @@
 
     (async () => {
       try {
-        const [multi, point, acc, info] = await Promise.all([
-          loadJSON('prediction_multi.json'),
-          loadJSON('prediction_point.json'),
-          loadJSON('accuracy_overall.json').catch(()=>null),
-          loadJSON('model_info.json').catch(()=>null),
-        ]);
+        let multi, point, acc, info;
+        try {
+          [multi, point, acc, info] = await Promise.all([
+            loadJSON('prediction_multi.json'),
+            loadJSON('prediction_point.json'),
+            loadJSON('accuracy_overall.json').catch(()=>null),
+            loadJSON('model_info.json').catch(()=>null),
+          ]);
+        } catch (e) {
+          console.warn('prediction_multi.json missing, falling back to prediction.json', e);
+          const pred = await loadJSON('prediction.json');
+          // Convert temp-only format to multi-like structure (temp, zero rain/cloud)
+          multi = {};
+          for (const [ts, obj] of Object.entries(pred)) {
+            const temp = (obj && typeof obj === 'object')
+              ? Number(obj.temp_c ?? obj.temperature_c ?? obj.temperature_2m ?? obj.temp ?? obj.value ?? 0)
+              : Number(obj);
+            multi[ts] = { temp_c: temp, rain_mm: 0, cloudcover_pct: 0 };
+          }
+          [point, acc, info] = await Promise.all([
+            loadJSON('prediction_point.json'),
+            loadJSON('accuracy_overall.json').catch(()=>null),
+            loadJSON('model_info.json').catch(()=>null),
+          ]);
+        }
 
         // KPI header
         document.getElementById('updated').textContent = `Updated: ${point.generated_at || '—'}`;

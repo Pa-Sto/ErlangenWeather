@@ -1,0 +1,11 @@
+
+### 2026-01-06T20:44:12Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 31.327869443548014
+- **commit**: cb28b080e492422b628abb539972600047b3010b
+- **branch**: main
