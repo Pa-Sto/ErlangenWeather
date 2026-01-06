@@ -11,7 +11,8 @@
       --text: #e5e7eb;
       --muted: #9ca3af;
       --accent: #60a5fa;
-      --rain: #f87171;
+      --temp: #fbbf24;
+      --rain: #3b82f6;
     }
     html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
     a { color: var(--accent); text-decoration: none; }
@@ -39,9 +40,9 @@
     .hour-row strong { font-weight: 700; }
     .sparkline { padding: 8px 14px 0; }
     .sparkline svg { width: 100%; height: 64px; display: block; }
-    .sparkline path.line { stroke: var(--accent); }
+    .sparkline.temp path.line { stroke: var(--temp); }
     .sparkline line.mean { stroke: var(--muted); stroke-dasharray: 3 3; }
-    .sparkline circle.dot { fill: var(--accent); }
+    .sparkline.temp circle.dot { fill: var(--temp); }
     .sparkline.rain rect { fill: var(--rain); }
 
     .section { margin-top: 22px; }
@@ -170,6 +171,7 @@
 
     function renderDayCard(dateStr, list, summary) {
       const stats = summary || statFromSeries(list);
+      const sumRain = list.reduce((s,p)=> s + (p.rain || 0), 0);
       const wrap = document.createElement('div');
       wrap.className = 'day-card';
       wrap.innerHTML = `
@@ -182,7 +184,7 @@
           </div>
         </div>
         <div class="sparkline temp">
-          <div class="small" style="margin-bottom:4px;">Temperature (°C)</div>
+          <div class="small" style="margin-bottom:4px;">Rain total: <strong>${sumRain.toFixed(1)} mm</strong> · Temperature (°C)</div>
         </div>
         <div class="sparkline rain">
           <div class="small" style="margin-bottom:4px;">Rain (mm/h)</div>
