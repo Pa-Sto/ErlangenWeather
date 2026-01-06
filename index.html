@@ -145,11 +145,24 @@
       const mean = (stats && typeof stats.mean === 'number') ? stats.mean : (vals.reduce((a,b)=>a+b,0)/n);
       const yMean = y(mean);
 
+      // x-axis ticks at standard hours
+      const xFromHour = (hr) => lpad + ((w - lpad - pad) * (hr / 24));
+      const hours = [0, 6, 12, 18, 24];
+      const xticks = hours.map(hr => `
+        <line class="axis-line" x1="${xFromHour(hr)}" y1="${h-pad}" x2="${xFromHour(hr)}" y2="${h-pad-4}" stroke-width="1"/>
+        <text class="axis-text" x="${xFromHour(hr)}" y="${h-2}" text-anchor="middle">${String(hr).padStart(2,'0')}</text>
+      `).join('');
+
       return `
       <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <!-- Y axis (left) and labels -->
         <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
         <text class="axis-text" x="${lpad-6}" y="${y(max)+4}" text-anchor="end">${max.toFixed(1)}</text>
         <text class="axis-text" x="${lpad-6}" y="${y(min)+4}" text-anchor="end">${min.toFixed(1)}</text>
+        <!-- X axis (bottom) and hour ticks -->
+        <line class="axis-line" x1="${lpad}" y1="${h-pad}" x2="${w - pad}" y2="${h-pad}" stroke-width="1"/>
+        ${xticks}
+        <!-- Mean and series -->
         <line class="mean" x1="${lpad}" x2="${w - pad}" y1="${yMean}" y2="${yMean}" stroke-width="1"/>
         <path class="line" d="${d}" fill="none" stroke-width="2"/>
       </svg>`;
@@ -172,10 +185,22 @@
           rects += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 1)}" height="${Math.max(0, hh)}" />`;
         });
       }
+      // x-axis ticks at standard hours
+      const xFromHour = (hr) => lpad + ((w - lpad - pad) * (hr / 24));
+      const hours = [0, 6, 12, 18, 24];
+      const xticks = hours.map(hr => `
+        <line class="axis-line" x1="${xFromHour(hr)}" y1="${h-pad}" x2="${xFromHour(hr)}" y2="${h-pad-4}" stroke-width="1"/>
+        <text class="axis-text" x="${xFromHour(hr)}" y="${h-2}" text-anchor="middle">${String(hr).padStart(2,'0')}</text>
+      `).join('');
+
       return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <!-- Y axis (left) and labels -->
         <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
         <text class="axis-text" x="${lpad-6}" y="${pad+10}" text-anchor="end">${vmax.toFixed(1)}</text>
         <text class="axis-text" x="${lpad-6}" y="${h-pad}" text-anchor="end">0</text>
+        <!-- X axis (bottom) and hour ticks -->
+        <line class="axis-line" x1="${lpad}" y1="${h-pad}" x2="${w - pad}" y2="${h-pad}" stroke-width="1"/>
+        ${xticks}
         ${rects}
       </svg>`;
     }
