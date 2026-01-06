@@ -76,6 +76,7 @@
 
   <script>
     const RAIN_MIN = 0.05; // mm/h threshold below which we treat rain as zero
+    const NF1 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
     async function loadJSON(url) {
       const r = await fetch(`${url}?v=${Date.now()}`, { cache: "no-store" });
@@ -128,14 +129,16 @@
     }
 
     function sparklineSVG(list, stats) {
-      const w = 320, h = 64, pad = 6, lpad = 38;
+      const w = 320, h = 64, pad = 6, lpad = 38, bpad = 16; // extra bottom pad for labels
       const vals = list.map(p => p.temp);
       const n = vals.length || 1;
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       const range = (max - min) || 1;
+      const plotH = h - 2*pad - bpad;
+      const axisY = h - pad - bpad;
       const x = (i) => lpad + ((w - lpad - pad) * (i / (n - 1 || 1)));
-      const y = (v) => pad + ((h - 2*pad) * (1 - ((v - min) / range)));
+      const y = (v) => pad + (plotH * (1 - ((v - min) / range)));
 
       // series path
       let d = "";
@@ -149,18 +152,18 @@
       const xFromHour = (hr) => lpad + ((w - lpad - pad) * (hr / 24));
       const hours = [0, 6, 12, 18, 24];
       const xticks = hours.map(hr => `
-        <line class="axis-line" x1="${xFromHour(hr)}" y1="${h-pad}" x2="${xFromHour(hr)}" y2="${h-pad-4}" stroke-width="1"/>
-        <text class="axis-text" x="${xFromHour(hr)}" y="${h-2}" text-anchor="middle">${String(hr).padStart(2,'0')}</text>
+        <line class="axis-line" x1="${xFromHour(hr)}" y1="${axisY}" x2="${xFromHour(hr)}" y2="${axisY-4}" stroke-width="1"/>
+        <text class="axis-text" x="${xFromHour(hr)}" y="${axisY+12}" text-anchor="middle">${String(hr).padStart(2,'0')}</text>
       `).join('');
 
       return `
       <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <!-- Y axis (left) and labels -->
-        <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
-        <text class="axis-text" x="${lpad-6}" y="${y(max)+4}" text-anchor="end">${max.toFixed(1)}</text>
-        <text class="axis-text" x="${lpad-6}" y="${y(min)+4}" text-anchor="end">${min.toFixed(1)}</text>
-        <!-- X axis (bottom) and hour ticks -->
-        <line class="axis-line" x1="${lpad}" y1="${h-pad}" x2="${w - pad}" y2="${h-pad}" stroke-width="1"/>
+        <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${axisY}" stroke-width="1"/>
+        <text class="axis-text" x="${lpad-6}" y="${y(max)+4}" text-anchor="end">${NF1.format(max)}</text>
+        <text class="axis-text" x="${lpad-6}" y="${y(min)+4}" text-anchor="end">${NF1.format(min)}</text>
+        <!-- X axis (bottom) and hour ticks below -->
+        <line class="axis-line" x1="${lpad}" y1="${axisY}" x2="${w - pad}" y2="${axisY}" stroke-width="1"/>
         ${xticks}
         <!-- Mean and series -->
         <line class="mean" x1="${lpad}" x2="${w - pad}" y1="${yMean}" y2="${yMean}" stroke-width="1"/>
@@ -169,19 +172,21 @@
     }
 
     function rainBarsSVG(list) {
-      const w = 320, h = 64, pad = 6, lpad = 38;
+      const w = 320, h = 64, pad = 6, lpad = 38, bpad = 16; // extra bottom pad for labels
       const valsRaw = list.map(p => Math.max(0, Number(p.rain || 0)));
       const vals = valsRaw.map(v => (v < RAIN_MIN ? 0 : v));
       const n = vals.length || 1;
       const vmax = Math.max(0, ...vals);
       const plotW = w - lpad - pad;
+      const plotH = h - 2*pad - bpad;
+      const axisY = h - pad - bpad;
       const bw = plotW / n;
       let rects = '';
       if (vmax > 0) {
         vals.forEach((v, i) => {
-          const hh = (v / vmax) * (h - 2*pad);
+          const hh = (v / vmax) * plotH;
           const x = lpad + i * bw;
-          const y = h - pad - hh;
+          const y = axisY - hh;
           rects += `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 1)}" height="${Math.max(0, hh)}" />`;
         });
       }
@@ -189,17 +194,17 @@
       const xFromHour = (hr) => lpad + ((w - lpad - pad) * (hr / 24));
       const hours = [0, 6, 12, 18, 24];
       const xticks = hours.map(hr => `
-        <line class="axis-line" x1="${xFromHour(hr)}" y1="${h-pad}" x2="${xFromHour(hr)}" y2="${h-pad-4}" stroke-width="1"/>
-        <text class="axis-text" x="${xFromHour(hr)}" y="${h-2}" text-anchor="middle">${String(hr).padStart(2,'0')}</text>
+        <line class="axis-line" x1="${xFromHour(hr)}" y1="${axisY}" x2="${xFromHour(hr)}" y2="${axisY-4}" stroke-width="1"/>
+        <text class="axis-text" x="${xFromHour(hr)}" y="${axisY+12}" text-anchor="middle">${String(hr).padStart(2,'0')}</text>
       `).join('');
 
       return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <!-- Y axis (left) and labels -->
-        <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${h-pad}" stroke-width="1"/>
-        <text class="axis-text" x="${lpad-6}" y="${pad+10}" text-anchor="end">${vmax.toFixed(1)}</text>
-        <text class="axis-text" x="${lpad-6}" y="${h-pad}" text-anchor="end">0</text>
-        <!-- X axis (bottom) and hour ticks -->
-        <line class="axis-line" x1="${lpad}" y1="${h-pad}" x2="${w - pad}" y2="${h-pad}" stroke-width="1"/>
+        <line class="axis-line" x1="${lpad}" y1="${pad}" x2="${lpad}" y2="${axisY}" stroke-width="1"/>
+        <text class="axis-text" x="${lpad-6}" y="${pad+10}" text-anchor="end">${NF1.format(vmax)}</text>
+        <text class="axis-text" x="${lpad-6}" y="${axisY}" text-anchor="end">0</text>
+        <!-- X axis (bottom) and hour ticks below -->
+        <line class="axis-line" x1="${lpad}" y1="${axisY}" x2="${w - pad}" y2="${axisY}" stroke-width="1"/>
         ${xticks}
         ${rects}
       </svg>`;
