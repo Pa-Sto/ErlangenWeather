@@ -66,6 +66,10 @@
       <div class="kpi"><div class="label">Forecast Start</div><div class="value" id="start">—</div></div>
       <div class="kpi"><div class="label">Horizon</div><div class="value" id="horizon">—</div></div>
     </div>
+    <div class="kpi-row" id="kpi-row-2" style="margin-top:8px;">
+      <div class="kpi"><div class="label">RMSE (Rain)</div><div class="value" id="rmse_rain">—</div></div>
+      <div class="kpi"><div class="label">RMSE (Cloud)</div><div class="value" id="rmse_cloud">—</div></div>
+    </div>
 
     <div class="days" id="days"></div>
 
@@ -288,9 +292,20 @@
         document.getElementById('updated').textContent = `Updated: ${point.generated_at || '—'}`;
         document.getElementById('start').textContent = point.start_time || '—';
         document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
+
                 const mseT = metrics?.mse?.temperature_c ?? null;
 const rmseT = (mseT != null) ? Math.sqrt(Number(mseT)) : null;
 document.getElementById('acc').textContent = (rmseT != null) ? `${rmseT.toFixed(2)} °C` : '—';
+
+const mseR = metrics?.mse?.rain_mm_per_h ?? null;
+const rmseR = (mseR != null) ? Math.sqrt(Number(mseR)) : null;
+const rainEl = document.getElementById('rmse_rain');
+if (rainEl) rainEl.textContent = (rmseR != null) ? `${rmseR.toFixed(2)} mm/h` : '—';
+
+const mseC = metrics?.mse?.cloudcover_pct ?? null;
+const rmseC = (mseC != null) ? Math.sqrt(Number(mseC)) : null;
+const cloudEl = document.getElementById('rmse_cloud');
+if (cloudEl) cloudEl.textContent = (rmseC != null) ? `${rmseC.toFixed(2)} %` : '—';
 
 
         // Group into calendar days and render three days starting at model start_time
