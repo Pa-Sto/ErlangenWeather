@@ -22,6 +22,7 @@
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
     .kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi-row.two { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
     .kpi { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 12px 14px; }
     .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
     .kpi .value { font-weight: 700; font-size: 18px; margin-top: 4px; }
@@ -61,12 +62,12 @@
   </header>
 
   <div class="container">
-    <div class="kpi-row">
-      <div class="kpi"><div class="label">RMSE (Temp)</div><div class="value" id="acc">—</div></div>
+    <div class="kpi-row two">
       <div class="kpi"><div class="label">Forecast Start</div><div class="value" id="start">—</div></div>
       <div class="kpi"><div class="label">Horizon</div><div class="value" id="horizon">—</div></div>
     </div>
     <div class="kpi-row" id="kpi-row-2" style="margin-top:8px;">
+      <div class="kpi"><div class="label">RMSE (Temp)</div><div class="value" id="rmse_temp">—</div></div>
       <div class="kpi"><div class="label">RMSE (Rain)</div><div class="value" id="rmse_rain">—</div></div>
       <div class="kpi"><div class="label">RMSE (Cloud)</div><div class="value" id="rmse_cloud">—</div></div>
     </div>
@@ -295,7 +296,7 @@
 
                 const mseT = metrics?.mse?.temperature_c ?? null;
 const rmseT = (mseT != null) ? Math.sqrt(Number(mseT)) : null;
-document.getElementById('acc').textContent = (rmseT != null) ? `${rmseT.toFixed(2)} °C` : '—';
+document.getElementById('rmse_temp').textContent = (rmseT != null) ? `${rmseT.toFixed(2)} °C` : '—';
 
 const mseR = metrics?.mse?.rain_mm_per_h ?? null;
 const rmseR = (mseR != null) ? Math.sqrt(Number(mseR)) : null;
