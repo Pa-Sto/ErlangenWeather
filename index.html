@@ -291,7 +291,8 @@
         document.getElementById('updated').textContent = `Updated: ${point.generated_at || '—'}`;
         document.getElementById('start').textContent = point.start_time || '—';
         document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
-        document.getElementById('acc').textContent = acc ? `${acc.accuracy_percent.toFixed(0)}%` : '—';
+                const accVal = acc && (acc.accuracy_percent ?? acc.accuracy_pct ?? acc.skill_pct ?? acc.accuracy);
+        document.getElementById('acc').textContent = (accVal != null) ? `${Number(accVal).toFixed(0)}%` : '—';
 
         // Metrics bar: MSE Temp / Rain / Cloud
         (function renderMetricsBar(){
