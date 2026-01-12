@@ -1186,7 +1186,7 @@ def probe_archive_range(lat, lon, variables, timezone="UTC", window_days=30):
             hi = mid - timedelta(days=1)
     return earliest, latest
 
-# --- Metrics: per-target MSE (temp, rain, cloud) -------------------------------
+# --- Metrics: per-target MSE (temp, rain, cloud) --------------------------------
 
 def compute_and_save_mse(
     cache_csv: str = "historical_data.csv",
@@ -1197,18 +1197,11 @@ def compute_and_save_mse(
 ) -> None:
     """Compute MSE for temperature (°C), rain (mm/h), and cloudcover (%) by
     aligning past predictions to archive actuals. Safe no-op if inputs are missing.
-
-    Sources:
-      - Actuals:        cache_csv (historical_data.csv) with columns like
-                        temperature_2m, rain/precipitation, cloudcover
-      - Predictions:    Prefer consolidated history (history_predictions.json)
-                        for temperature; fall back to latest multi-output
-                        (prediction_multi.json) to also score rain/cloud when available.
     """
     import os, json
     import numpy as np
     import pandas as pd
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     def _pick(cols, cands):
         for c in cands:
@@ -1216,7 +1209,7 @@ def compute_and_save_mse(
                 return c
         return None
 
-    # 1) Load actuals (archive cache)
+    # 1) Load actuals and normalize index tz
     if not os.path.exists(cache_csv) or os.path.getsize(cache_csv) == 0:
         print(f"[Metrics] No cache CSV at {cache_csv}; skipping MSE")
         return
@@ -1226,47 +1219,85 @@ def compute_and_save_mse(
         print(f"[Metrics] Failed reading {cache_csv}: {e}")
         return
 
-    # Actual columns (names can vary)
+    # Normalize archive timestamps to UTC-naive
+    try:
+        if getattr(df.index, "tz", None) is not None:
+            df.index = df.index.tz_convert("UTC").tz_localize(None)
+        else:
+            df.index = df.index.tz_localize(None)
+    except Exception:
+        df.index = pd.to_datetime(df.index, errors="coerce")
+
     col_temp  = _pick(df.columns, ["temperature_2m", "temp_c", "temperature_c", "temperature"])  # °C
     col_rain  = _pick(df.columns, ["rain", "precipitation", "rain_mm", "precip_mm"])             # mm/h
     col_cloud = _pick(df.columns, ["cloudcover", "cloudcover_pct"])                               # %
 
-    # 2) Load predictions
+    # 2) Load predictions (history + latest multi)
     preds = []  # rows: {ts, pred_temp, pred_rain, pred_cloud}
 
-    # (a) Preferred: history_predictions.json (temp only)
+    def _add_mapping(mp: dict):
+        for ts, obj in mp.items():
+            try:
+                t = pd.to_datetime(ts, utc=True, errors="coerce")
+                if pd.isna(t):
+                    t = pd.to_datetime(ts, errors="coerce")
+                if pd.isna(t):
+                    continue
+                # Normalize to UTC-naive
+                try:
+                    if getattr(t, "tzinfo", None) is not None:
+                        t = t.tz_convert("UTC").tz_localize(None)
+                except Exception:
+                    try:
+                        t = t.tz_localize(None)
+                    except Exception:
+                        pass
+                temp  = None
+                rain  = None
+                cloud = None
+                if isinstance(obj, dict):
+                    temp  = obj.get("temp_c") or obj.get("temperature_c") or obj.get("temperature_2m") or obj.get("temp")
+                    rain  = obj.get("rain_mm") or obj.get("precip_mm") or obj.get("precipitation")
+                    cloud = obj.get("cloudcover_pct") or obj.get("cloudcover")
+                elif isinstance(obj, (int, float)):
+                    temp = obj
+                preds.append({
+                    "ts": pd.to_datetime(t),
+                    "pred_temp": float(temp) if temp is not None else None,
+                    "pred_rain": float(rain) if rain is not None else None,
+                    "pred_cloud": float(cloud) if cloud is not None else None,
+                })
+            except Exception:
+                continue
+
+    # Preferred: history_predictions.json (temp series)
     if os.path.exists(history_path) and os.path.getsize(history_path) > 0:
         try:
             hist = json.load(open(history_path, "r", encoding="utf-8"))
-            for entry in (hist if isinstance(hist, list) else []):
-                series = entry.get("series", {})
-                for ts, val in series.items():
-                    try:
-                        t = pd.to_datetime(ts)
-                        preds.append({"ts": t, "pred_temp": float(val), "pred_rain": None, "pred_cloud": None})
-                    except Exception:
-                        continue
+            if isinstance(hist, dict) and any(k in hist for k in ("entries", "history")):
+                entries = hist.get("entries") or hist.get("history") or []
+                for entry in entries:
+                    mp = entry.get("series") or entry.get("pred") or entry.get("prediction") or entry.get("data") or {}
+                    if isinstance(mp, dict):
+                        _add_mapping(mp)
+            elif isinstance(hist, list):
+                for entry in hist:
+                    mp = None
+                    if isinstance(entry, dict):
+                        mp = entry.get("series") or entry.get("pred") or entry.get("prediction") or entry.get("data")
+                    if isinstance(mp, dict):
+                        _add_mapping(mp)
+            elif isinstance(hist, dict):
+                _add_mapping(hist)
         except Exception as e:
             print(f"[Metrics] Failed reading {history_path}: {e}")
 
-    # (b) Fallback/augment: prediction_multi.json (latest run with rain/cloud)
+    # Fallback/augment: latest multi-output prediction
     if os.path.exists(multi_path) and os.path.getsize(multi_path) > 0:
         try:
             multi = json.load(open(multi_path, "r", encoding="utf-8"))
-            # multi is mapping ts -> {temp_c, precip_mm, rain_mm, cloudcover_pct}
-            for ts, obj in multi.items():
-                try:
-                    t = pd.to_datetime(ts)
-                    row = {
-                        "ts": t,
-                        "pred_temp": float(obj.get("temp_c")) if obj.get("temp_c") is not None else None,
-                        "pred_rain": (float(obj.get("rain_mm")) if obj.get("rain_mm") is not None
-                                      else (float(obj.get("precip_mm")) if obj.get("precip_mm") is not None else None)),
-                        "pred_cloud": float(obj.get("cloudcover_pct")) if obj.get("cloudcover_pct") is not None else None,
-                    }
-                    preds.append(row)
-                except Exception:
-                    continue
+            if isinstance(multi, dict):
+                _add_mapping(multi)
         except Exception as e:
             print(f"[Metrics] Failed reading {multi_path}: {e}")
 
@@ -1275,38 +1306,58 @@ def compute_and_save_mse(
         return
 
     P = pd.DataFrame(preds).dropna(subset=["ts"]).sort_values("ts")
+    # Normalize prediction timestamps to UTC-naive for safe comparison
+    P["ts"] = pd.to_datetime(P["ts"], errors="coerce")
+    try:
+        P["ts"] = P["ts"].dt.tz_convert("UTC").dt.tz_localize(None)
+    except Exception:
+        try:
+            P["ts"] = P["ts"].dt.tz_localize(None)
+        except Exception:
+            pass
 
-    # Only evaluate predictions old enough that the archive has ground truth
-    cutoff = pd.Timestamp.utcnow() - pd.Timedelta(days=min_lag_days)
-    P = P[P["ts"] <= cutoff]
+    # Only evaluate predictions old enough that the archive likely has ground truth
+    cutoff = pd.Timestamp.utcnow().tz_localize(None) - pd.Timedelta(days=min_lag_days)
+    try:
+        P = P[P["ts"] <= cutoff]
+    except Exception as e:
+        print(f"[Metrics] Timestamp comparison failed: {e}")
+        return
     if P.empty:
         print("[Metrics] No sufficiently old predictions to score yet; skipping MSE")
         return
 
     # 3) Join with actuals by timestamp
     A = df.copy()
-    A["ts"] = A.index
+    A["ts"] = pd.to_datetime(A.index, errors="coerce")
+    try:
+        A["ts"] = A["ts"].dt.tz_convert("UTC").dt.tz_localize(None)
+    except Exception:
+        try:
+            A["ts"] = A["ts"].dt.tz_localize(None)
+        except Exception:
+            pass
+
     M = pd.merge(P, A, on="ts", how="inner")
     if M.empty:
         print("[Metrics] No overlapping timestamps between predictions and archive; skipping MSE")
         return
 
-    def _mse(pred_col, act_col):
-        if pred_col not in M or act_col not in M:
+    def _mse(pc, ac):
+        if pc not in M or ac not in M:
             return None, 0
-        sub = M[[pred_col, act_col]].dropna()
+        sub = M[[pc, ac]].dropna()
         if sub.empty:
             return None, 0
-        err = (sub[pred_col].astype(float) - sub[act_col].astype(float)) ** 2
+        err = (sub[pc].astype(float) - sub[ac].astype(float)) ** 2
         return float(np.mean(err)), int(len(sub))
 
     mse_temp, n_t = _mse("pred_temp",  col_temp)  if col_temp  else (None, 0)
-    rain_truth_col = col_rain
-    mse_rain, n_r = _mse("pred_rain",  rain_truth_col) if rain_truth_col else (None, 0)
+    mse_rain, n_r = _mse("pred_rain",  col_rain)  if col_rain  else (None, 0)
     mse_cloud, n_c = _mse("pred_cloud", col_cloud) if col_cloud else (None, 0)
 
     out = {
-        "updated_at": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "updated_at": datetime.utcnow().replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
         "window_min_lag_days": int(min_lag_days),
         "n_points": {"temp": n_t, "rain": n_r, "cloud": n_c},
         "mse": {
