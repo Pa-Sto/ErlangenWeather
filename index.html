@@ -341,14 +341,30 @@ if (cloudEl) cloudEl.textContent = (rmseC != null) ? `${rmseC.toFixed(2)} %` : '
         // Model info panel
         const mi = document.getElementById('modelInfo');
         if (info) {
-          const lines = [];
-          if (info.model_name) lines.push(`<strong>${info.model_name}</strong>`);
-          if (info.architecture) lines.push(`Architecture: ${info.architecture}`);
-          if (info.hparams) lines.push(`HParams: ${info.hparams}`);
-          if (info.training_data) lines.push(`Training data: ${info.training_data}`);
-          if (info.features_count) lines.push(`Features: ${info.features_count}`);
-          if (info.feature_names && info.feature_names.length) lines.push(`Feature names: <span class="mono">${info.feature_names.join(', ')}</span>`);
-          mi.innerHTML = lines.join('<br/>');
+          const fmt = (v) => {
+            if (v == null) return '';
+            if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+            if (Array.isArray(v)) return v.join(', ');
+            if (typeof v === 'object') {
+              try {
+                return Object.entries(v)
+                  .map(([k, val]) => `${k}: ${Array.isArray(val) ? val.join(', ') : (typeof val === 'object' ? JSON.stringify(val) : String(val))}`)
+                  .join(', ');
+              } catch (e) {
+                return JSON.stringify(v);
+              }
+            }
+            return String(v);
+          };
+
+          const rows = [];
+          if (info.model_name) rows.push(`<strong>${fmt(info.model_name)}</strong>`);
+          if (info.architecture) rows.push(`Architecture: <span class="mono">${fmt(info.architecture)}</span>`);
+          if (info.hparams) rows.push(`HParams: <span class="mono">${fmt(info.hparams)}</span>`);
+          if (info.training_data) rows.push(`Training data: <span class="mono">${fmt(info.training_data)}</span>`);
+          if (info.features_count != null) rows.push(`Features: ${fmt(info.features_count)}`);
+          if (info.feature_names && info.feature_names.length) rows.push(`Feature names: <span class="mono">${info.feature_names.join(', ')}</span>`);
+          mi.innerHTML = rows.join('<br/>' );
         } else {
           mi.textContent = 'Model info unavailable.';
         }
