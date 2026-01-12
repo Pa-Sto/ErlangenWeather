@@ -66,6 +66,7 @@
       <div class="kpi"><div class="label">Forecast Start</div><div class="value" id="start">—</div></div>
       <div class="kpi"><div class="label">Horizon</div><div class="value" id="horizon">—</div></div>
     </div>
+    <div class="panel small" id="metricsBar" style="margin-bottom:16px; display:none;"></div>
 
     <div class="days" id="days"></div>
 
@@ -258,13 +259,14 @@
 
     (async () => {
       try {
-        let multi, point, acc, info;
+        let multi, point, acc, info, metrics;
         try {
-          [multi, point, acc, info] = await Promise.all([
+          [multi, point, acc, info, metrics] = await Promise.all([
             loadJSON('prediction_multi.json'),
             loadJSON('prediction_point.json'),
             loadJSON('accuracy_overall.json').catch(()=>null),
             loadJSON('model_info.json').catch(()=>null),
+            loadJSON('metrics.json').catch(()=>null),
           ]);
         } catch (e) {
           console.warn('prediction_multi.json missing, falling back to prediction.json', e);
@@ -277,10 +279,11 @@
               : Number(obj);
             multi[ts] = { temp_c: temp, rain_mm: 0, cloudcover_pct: 0 };
           }
-          [point, acc, info] = await Promise.all([
+          [point, acc, info, metrics] = await Promise.all([
             loadJSON('prediction_point.json'),
             loadJSON('accuracy_overall.json').catch(()=>null),
             loadJSON('model_info.json').catch(()=>null),
+            loadJSON('metrics.json').catch(()=>null),
           ]);
         }
 
@@ -289,6 +292,20 @@
         document.getElementById('start').textContent = point.start_time || '—';
         document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
         document.getElementById('acc').textContent = acc ? `${acc.accuracy_percent.toFixed(0)}%` : '—';
+
+        // Metrics bar: MSE Temp / Rain / Cloud
+        (function renderMetricsBar(){
+          const el = document.getElementById('metricsBar');
+          if (!el) return;
+          if (!metrics || !metrics.mse) { el.style.display = 'none'; return; }
+          const m = metrics.mse;
+          const chunks = [];
+          if (m.temperature_c != null) chunks.push(`MSE Temp: <strong>${Number(m.temperature_c).toFixed(2)}°C²</strong>`);
+          if (m.rain_mm_per_h != null) chunks.push(`Rain: <strong>${Number(m.rain_mm_per_h).toFixed(2)} (mm/h)²</strong>`);
+          if (m.cloudcover_pct != null) chunks.push(`Cloud: <strong>${Number(m.cloudcover_pct).toFixed(2)} %²</strong>`);
+          el.innerHTML = chunks.join(' · ');
+          el.style.display = chunks.length ? '' : 'none';
+        })();
 
         // Group into calendar days and render three days starting at model start_time
         const byDay = groupByDateMulti(multi);

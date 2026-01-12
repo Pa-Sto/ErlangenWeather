@@ -1186,6 +1186,142 @@ def probe_archive_range(lat, lon, variables, timezone="UTC", window_days=30):
             hi = mid - timedelta(days=1)
     return earliest, latest
 
+# --- Metrics: per-target MSE (temp, rain, cloud) -------------------------------
+
+def compute_and_save_mse(
+    cache_csv: str = "historical_data.csv",
+    history_path: str = "history_predictions.json",
+    multi_path: str = "prediction_multi.json",
+    out_path: str = "metrics.json",
+    min_lag_days: int = 5,
+) -> None:
+    """Compute MSE for temperature (°C), rain (mm/h), and cloudcover (%) by
+    aligning past predictions to archive actuals. Safe no-op if inputs are missing.
+
+    Sources:
+      - Actuals:        cache_csv (historical_data.csv) with columns like
+                        temperature_2m, rain/precipitation, cloudcover
+      - Predictions:    Prefer consolidated history (history_predictions.json)
+                        for temperature; fall back to latest multi-output
+                        (prediction_multi.json) to also score rain/cloud when available.
+    """
+    import os, json
+    import numpy as np
+    import pandas as pd
+    from datetime import datetime
+
+    def _pick(cols, cands):
+        for c in cands:
+            if c in cols:
+                return c
+        return None
+
+    # 1) Load actuals (archive cache)
+    if not os.path.exists(cache_csv) or os.path.getsize(cache_csv) == 0:
+        print(f"[Metrics] No cache CSV at {cache_csv}; skipping MSE")
+        return
+    try:
+        df = pd.read_csv(cache_csv, index_col="time", parse_dates=["time"]).sort_index()
+    except Exception as e:
+        print(f"[Metrics] Failed reading {cache_csv}: {e}")
+        return
+
+    # Actual columns (names can vary)
+    col_temp  = _pick(df.columns, ["temperature_2m", "temp_c", "temperature_c", "temperature"])  # °C
+    col_rain  = _pick(df.columns, ["rain", "precipitation", "rain_mm", "precip_mm"])             # mm/h
+    col_cloud = _pick(df.columns, ["cloudcover", "cloudcover_pct"])                               # %
+
+    # 2) Load predictions
+    preds = []  # rows: {ts, pred_temp, pred_rain, pred_cloud}
+
+    # (a) Preferred: history_predictions.json (temp only)
+    if os.path.exists(history_path) and os.path.getsize(history_path) > 0:
+        try:
+            hist = json.load(open(history_path, "r", encoding="utf-8"))
+            for entry in (hist if isinstance(hist, list) else []):
+                series = entry.get("series", {})
+                for ts, val in series.items():
+                    try:
+                        t = pd.to_datetime(ts)
+                        preds.append({"ts": t, "pred_temp": float(val), "pred_rain": None, "pred_cloud": None})
+                    except Exception:
+                        continue
+        except Exception as e:
+            print(f"[Metrics] Failed reading {history_path}: {e}")
+
+    # (b) Fallback/augment: prediction_multi.json (latest run with rain/cloud)
+    if os.path.exists(multi_path) and os.path.getsize(multi_path) > 0:
+        try:
+            multi = json.load(open(multi_path, "r", encoding="utf-8"))
+            # multi is mapping ts -> {temp_c, precip_mm, rain_mm, cloudcover_pct}
+            for ts, obj in multi.items():
+                try:
+                    t = pd.to_datetime(ts)
+                    row = {
+                        "ts": t,
+                        "pred_temp": float(obj.get("temp_c")) if obj.get("temp_c") is not None else None,
+                        "pred_rain": (float(obj.get("rain_mm")) if obj.get("rain_mm") is not None
+                                      else (float(obj.get("precip_mm")) if obj.get("precip_mm") is not None else None)),
+                        "pred_cloud": float(obj.get("cloudcover_pct")) if obj.get("cloudcover_pct") is not None else None,
+                    }
+                    preds.append(row)
+                except Exception:
+                    continue
+        except Exception as e:
+            print(f"[Metrics] Failed reading {multi_path}: {e}")
+
+    if not preds:
+        print("[Metrics] No predictions available; skipping MSE")
+        return
+
+    P = pd.DataFrame(preds).dropna(subset=["ts"]).sort_values("ts")
+
+    # Only evaluate predictions old enough that the archive has ground truth
+    cutoff = pd.Timestamp.utcnow() - pd.Timedelta(days=min_lag_days)
+    P = P[P["ts"] <= cutoff]
+    if P.empty:
+        print("[Metrics] No sufficiently old predictions to score yet; skipping MSE")
+        return
+
+    # 3) Join with actuals by timestamp
+    A = df.copy()
+    A["ts"] = A.index
+    M = pd.merge(P, A, on="ts", how="inner")
+    if M.empty:
+        print("[Metrics] No overlapping timestamps between predictions and archive; skipping MSE")
+        return
+
+    def _mse(pred_col, act_col):
+        if pred_col not in M or act_col not in M:
+            return None, 0
+        sub = M[[pred_col, act_col]].dropna()
+        if sub.empty:
+            return None, 0
+        err = (sub[pred_col].astype(float) - sub[act_col].astype(float)) ** 2
+        return float(np.mean(err)), int(len(sub))
+
+    mse_temp, n_t = _mse("pred_temp",  col_temp)  if col_temp  else (None, 0)
+    rain_truth_col = col_rain
+    mse_rain, n_r = _mse("pred_rain",  rain_truth_col) if rain_truth_col else (None, 0)
+    mse_cloud, n_c = _mse("pred_cloud", col_cloud) if col_cloud else (None, 0)
+
+    out = {
+        "updated_at": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        "window_min_lag_days": int(min_lag_days),
+        "n_points": {"temp": n_t, "rain": n_r, "cloud": n_c},
+        "mse": {
+            "temperature_c": mse_temp,
+            "rain_mm_per_h": mse_rain,
+            "cloudcover_pct": mse_cloud,
+        },
+    }
+    try:
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(out, f, indent=2)
+        print(f"[Metrics] Saved MSE metrics to {out_path}")
+    except Exception as e:
+        print(f"[Metrics] Failed writing {out_path}: {e}")
+
 if __name__ == "__main__":
     # parameters via CLI
     parser = argparse.ArgumentParser(description="Train or run prediction for ErlangenWeather model")
@@ -1396,8 +1532,18 @@ if __name__ == "__main__":
         timezone="Europe/Berlin",
         min_age_days=5,
     )
+    # Compute per-target MSE metrics and save to metrics.json (non-fatal)
+    try:
+        compute_and_save_mse(
+            cache_csv=cache_file,
+            history_path="history_predictions.json",
+            multi_path="prediction_multi.json",
+            out_path="metrics.json",
+            min_lag_days=5,
+        )
+    except Exception as _e:
+        print(f"[Metrics] Skipped MSE computation: {_e}")    # ---- Log prediction event ----
 
-    # ---- Log prediction event ----
     overall_acc = None
     try:
         with open("accuracy_overall.json", "r") as f:
