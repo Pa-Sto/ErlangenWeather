@@ -62,7 +62,7 @@
 
   <div class="container">
     <div class="kpi-row">
-      <div class="kpi"><div class="label">Overall Accuracy</div><div class="value" id="acc">—</div></div>
+      <div class="kpi"><div class="label">MSE (Temp)</div><div class="value" id="acc">—</div></div>
       <div class="kpi"><div class="label">Forecast Start</div><div class="value" id="start">—</div></div>
       <div class="kpi"><div class="label">Horizon</div><div class="value" id="horizon">—</div></div>
     </div>
@@ -259,15 +259,14 @@
 
     (async () => {
       try {
-        let multi, point, acc, info, metrics;
+        let multi, point, info, metrics;
         try {
-          [multi, point, acc, info, metrics] = await Promise.all([
-            loadJSON('prediction_multi.json'),
-            loadJSON('prediction_point.json'),
-            loadJSON('accuracy_overall.json').catch(()=>null),
-            loadJSON('model_info.json').catch(()=>null),
-            loadJSON('metrics.json').catch(()=>null),
-          ]);
+          [multi, point, info, metrics] = await Promise.all([
+          loadJSON('prediction_multi.json'),
+          loadJSON('prediction_point.json'),
+          loadJSON('model_info.json').catch(()=>null),
+          loadJSON('metrics.json').catch(()=>null),
+]);
         } catch (e) {
           console.warn('prediction_multi.json missing, falling back to prediction.json', e);
           const pred = await loadJSON('prediction.json');
@@ -279,20 +278,19 @@
               : Number(obj);
             multi[ts] = { temp_c: temp, rain_mm: 0, cloudcover_pct: 0 };
           }
-          [point, acc, info, metrics] = await Promise.all([
-            loadJSON('prediction_point.json'),
-            loadJSON('accuracy_overall.json').catch(()=>null),
-            loadJSON('model_info.json').catch(()=>null),
-            loadJSON('metrics.json').catch(()=>null),
-          ]);
+          [point, info, metrics] = await Promise.all([
+  loadJSON('prediction_point.json'),
+  loadJSON('model_info.json').catch(()=>null),
+  loadJSON('metrics.json').catch(()=>null),
+]);
         }
 
         // KPI header
         document.getElementById('updated').textContent = `Updated: ${point.generated_at || '—'}`;
         document.getElementById('start').textContent = point.start_time || '—';
         document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
-                const accVal = acc && (acc.accuracy_percent ?? acc.accuracy_pct ?? acc.skill_pct ?? acc.accuracy);
-        document.getElementById('acc').textContent = (accVal != null) ? `${Number(accVal).toFixed(0)}%` : '—';
+                const mseT = (metrics && metrics.mse) ? metrics.mse.temperature_c : null;
+document.getElementById('acc').textContent = (mseT != null) ? `${Number(mseT).toFixed(2)} °C²` : '—';
 
         // Metrics bar: MSE Temp / Rain / Cloud
         (function renderMetricsBar(){
