@@ -62,11 +62,10 @@
 
   <div class="container">
     <div class="kpi-row">
-      <div class="kpi"><div class="label">MSE (Temp)</div><div class="value" id="acc">—</div></div>
+      <div class="kpi"><div class="label">RMSE (Temp)</div><div class="value" id="acc">—</div></div>
       <div class="kpi"><div class="label">Forecast Start</div><div class="value" id="start">—</div></div>
       <div class="kpi"><div class="label">Horizon</div><div class="value" id="horizon">—</div></div>
     </div>
-    <div class="panel small" id="metricsBar" style="margin-bottom:16px; display:none;"></div>
 
     <div class="days" id="days"></div>
 
@@ -289,22 +288,10 @@
         document.getElementById('updated').textContent = `Updated: ${point.generated_at || '—'}`;
         document.getElementById('start').textContent = point.start_time || '—';
         document.getElementById('horizon').textContent = (point.horizon_hours || 72) + ' h';
-                const mseT = (metrics && metrics.mse) ? metrics.mse.temperature_c : null;
-document.getElementById('acc').textContent = (mseT != null) ? `${Number(mseT).toFixed(2)} °C²` : '—';
+                const mseT = metrics?.mse?.temperature_c ?? null;
+const rmseT = (mseT != null) ? Math.sqrt(Number(mseT)) : null;
+document.getElementById('acc').textContent = (rmseT != null) ? `${rmseT.toFixed(2)} °C` : '—';
 
-        // Metrics bar: MSE Temp / Rain / Cloud
-        (function renderMetricsBar(){
-          const el = document.getElementById('metricsBar');
-          if (!el) return;
-          if (!metrics || !metrics.mse) { el.style.display = 'none'; return; }
-          const m = metrics.mse;
-          const chunks = [];
-          if (m.temperature_c != null) chunks.push(`MSE Temp: <strong>${Number(m.temperature_c).toFixed(2)}°C²</strong>`);
-          if (m.rain_mm_per_h != null) chunks.push(`Rain: <strong>${Number(m.rain_mm_per_h).toFixed(2)} (mm/h)²</strong>`);
-          if (m.cloudcover_pct != null) chunks.push(`Cloud: <strong>${Number(m.cloudcover_pct).toFixed(2)} %²</strong>`);
-          el.innerHTML = chunks.join(' · ');
-          el.style.display = chunks.length ? '' : 'none';
-        })();
 
         // Group into calendar days and render three days starting at model start_time
         const byDay = groupByDateMulti(multi);
