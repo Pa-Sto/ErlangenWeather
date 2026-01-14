@@ -53,6 +53,7 @@
     .panel { background: var(--panel); border: 1px solid #1f2937; border-radius: 10px; padding: 14px 16px; }
     .small { font-size: 14px; color: var(--muted); }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .info-label { color: var(--temp); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -341,30 +342,70 @@ if (cloudEl) cloudEl.textContent = (rmseC != null) ? `${rmseC.toFixed(2)} %` : '
         // Model info panel
         const mi = document.getElementById('modelInfo');
         if (info) {
-          const fmt = (v) => {
-            if (v == null) return '';
-            if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
-            if (Array.isArray(v)) return v.join(', ');
-            if (typeof v === 'object') {
-              try {
-                return Object.entries(v)
-                  .map(([k, val]) => `${k}: ${Array.isArray(val) ? val.join(', ') : (typeof val === 'object' ? JSON.stringify(val) : String(val))}`)
-                  .join(', ');
-              } catch (e) {
-                return JSON.stringify(v);
-              }
-            }
-            return String(v);
-          };
+          const a = (url, label) => url ? `<a href="${url}" target="_blank" rel="noopener">${label || url}</a>` : '';
+          const safe = (v, d='—') => (v === null || v === undefined ? d : v);
 
           const rows = [];
-          if (info.model_name) rows.push(`<strong>${fmt(info.model_name)}</strong>`);
-          if (info.architecture) rows.push(`Architecture: <span class="mono">${fmt(info.architecture)}</span>`);
-          if (info.hparams) rows.push(`HParams: <span class="mono">${fmt(info.hparams)}</span>`);
-          if (info.training_data) rows.push(`Training data: <span class="mono">${fmt(info.training_data)}</span>`);
-          if (info.features_count != null) rows.push(`Features: ${fmt(info.features_count)}`);
-          if (info.feature_names && info.feature_names.length) rows.push(`Feature names: <span class="mono">${info.feature_names.join(', ')}</span>`);
-          mi.innerHTML = rows.join('<br/>' );
+          // Title
+          rows.push(`<div><strong>${safe(info.model_name, 'Model')}</strong>${info.version ? ` <span class="small">v${info.version}</span>` : ''}</div>`);
+
+          // Location
+          if (info.location) {
+            const loc = info.location;
+            const locStr = [loc.city, (loc.lat!=null && loc.lon!=null) ? `(${Number(loc.lat).toFixed(2)}, ${Number(loc.lon).toFixed(2)})` : '']
+              .filter(Boolean).join(' ');
+            rows.push(`<div><span class="info-label">Location:</span> <span class="mono">${locStr || '—'}</span></div>`);
+          }
+
+          // Architecture summary
+          if (info.architecture) {
+            const ar = info.architecture;
+            const patch = ar.patching ? `, patching k=${ar.patching.kernel}, s=${ar.patching.stride}` : '';
+            rows.push(`<div><span class="info-label">Architecture:</span> <span class="mono">${safe(ar.type)} · d_model=${safe(ar.d_model)} · layers=${safe(ar.layers)} · heads=${safe(ar.heads)} · ffn_dim=${safe(ar.ffn_dim)} · dropout=${safe(ar.dropout)}${patch}</span></div>`);
+          }
+
+          // Input window & features
+          if (info.input) {
+            const inp = info.input;
+            const wnd = (inp.window_days!=null || inp.window_hours!=null)
+              ? `${safe(inp.window_days, Math.round((inp.window_hours||0)/24))} days (${safe(inp.window_hours)} h)`
+              : '—';
+            rows.push(`<div><span class="info-label">Input window:</span> <span class="mono">${wnd}, stride=${safe(inp.window_stride_hours,'?')} h, scaling=${safe(inp.scaling,'zscore')}</span></div>`);
+            if (Array.isArray(inp.features) && inp.features.length) {
+              rows.push(`<div><span class="info-label">Features (${inp.features.length}):</span> <span class="mono">${inp.features.join(', ')}</span></div>`);
+            }
+          }
+
+          // Outputs
+          if (info.output) {
+            const out = info.output;
+            const targets = Array.isArray(out.targets) ? out.targets.map(t => `${t.key||t.name} (${t.unit||''})`).join(', ') : '—';
+            rows.push(`<div><span class="info-label">Output:</span> <span class="mono">${safe(out.horizon_hours,72)} h · ${targets}</span></div>`);
+          }
+
+          // Training data
+          if (info.training_data) {
+            const td = info.training_data;
+            const spanStr = Array.isArray(td.span) ? td.span.join(' → ') : (td.span || '—');
+            rows.push(`<div><span class="info-label">Training data span:</span> <span class="mono">${spanStr}</span></div>`);
+            if (Array.isArray(td.sources) && td.sources.length) {
+              const src = td.sources.map(s => a(s.url, s.name || s.url)).join(' · ');
+              rows.push(`<div><span class="info-label">Sources:</span> ${src}</div>`);
+            }
+            if (td.notes) rows.push(`<div class="small">${td.notes}</div>`);
+          }
+
+          // Useful links
+          if (info.links) {
+            const L = info.links;
+            const links = [
+              L.project_repo ? a(L.project_repo, 'Project repo') : '',
+              L.data_docs ? a(L.data_docs, 'Open‑Meteo docs') : ''
+            ].filter(Boolean).join(' · ');
+            if (links) rows.push(`<div><span class="info-label">Links:</span> ${links}</div>`);
+          }
+
+          mi.innerHTML = rows.join('');
         } else {
           mi.textContent = 'Model info unavailable.';
         }
