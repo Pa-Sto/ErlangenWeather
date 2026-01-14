@@ -42,3 +42,35 @@
 - **overall_accuracy**: 30.99354806705081
 - **commit**: 133832bbff537b9f90dfb522c257e616c8dac77e
 - **branch**: main
+
+### 2026-01-13T11:17:08Z — train
+
+- **source**: archive
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **n_features**: 28
+- **n_train_windows**: 24785
+- **n_val_windows**: 6200
+- **best_val_loss**: 1.2876464128494263
+- **final_val_loss**: 1.2952016592025757
+- **epochs_run**: 12
+- **train_seconds**: 1679
+- **d_model**: 128
+- **num_heads**: 4
+- **d_ff**: 256
+- **num_layers**: 4
+- **commit**: 18011f552967a4fd31904cf61c71d854dd23bf3c
+- **branch**: main
+
+### 2026-01-13T11:17:12Z — predict
+
+- **source**: archive
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 18011f552967a4fd31904cf61c71d854dd23bf3c
+- **branch**: main

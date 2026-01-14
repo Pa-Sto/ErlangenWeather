@@ -678,6 +678,10 @@ def load_model_safe(path: str):
         print(f"[Model] load_model with custom_objects failed: {e1}\n[Model] Retrying with compile=False …")
         return load_model(path, compile=False)
 
+# ---------------------------------------------
+# Transformer v2 with patching (Conv1D stride=2)
+# ---------------------------------------------
+
 def weighted_mse_multi(y_true, y_pred):
     """Time-decay + per-channel weighting that adapts to TARGETS length.
     y_* shape: (batch, H, C)
@@ -714,6 +718,73 @@ def weighted_mse_multi(y_true, y_pred):
     w = w_t * w_c_sel
     se = tf.square(y_true - y_pred)
     return tf.reduce_mean(w * se)
+
+# ---------------------------------------------
+# Transformer v2 with patching (Conv1D stride=2)
+# ---------------------------------------------
+
+def build_transformer_model_v2(
+    seq_len: int,
+    n_features: int,
+    horizon: int = 72,
+    d_model: int = 128,
+    n_heads: int = 4,
+    n_layers: int = 4,
+    ffn_dim: int = 256,
+    dropout: float = 0.1,
+    patch_kernel: int = 4,
+    patch_stride: int = 2,
+):
+    """Encoder-only Transformer with Conv1D patching for time-series.
+    Outputs shape (horizon, NUM_TARGETS) matching TARGETS order.
+    """
+    inputs = layers.Input(shape=(seq_len, n_features), name="inputs")
+
+    # Patching: reduce sequence length while projecting to d_model
+    x = layers.Conv1D(
+        filters=d_model,
+        kernel_size=patch_kernel,
+        strides=patch_stride,
+        padding="valid",
+        name="patch_conv",
+    )(inputs)
+    x = layers.LayerNormalization(epsilon=1e-6, name="patch_ln")(x)
+
+    # Transformer encoder blocks (Pre-LN style)
+    for i in range(n_layers):
+        attn = layers.MultiHeadAttention(
+            num_heads=n_heads,
+            key_dim=d_model // n_heads,
+            dropout=dropout,
+            name=f"mha_{i}",
+        )(x, x)
+        x = layers.Add(name=f"attn_add_{i}")([
+            x,
+            layers.Dropout(dropout, name=f"attn_dropout_{i}")(attn),
+        ])
+        x = layers.LayerNormalization(epsilon=1e-6, name=f"attn_ln_{i}")(x)
+
+        f = layers.Dense(ffn_dim, activation="gelu", name=f"ff_{i}_dense1")(x)
+        f = layers.Dropout(dropout, name=f"ff_{i}_drop")(f)
+        f = layers.Dense(d_model, name=f"ff_{i}_dense2")(f)
+        x = layers.Add(name=f"ff_add_{i}")([
+            x,
+            layers.Dropout(dropout, name=f"ff_{i}_drop2")(f),
+        ])
+        x = layers.LayerNormalization(epsilon=1e-6, name=f"ff_ln_{i}")(x)
+
+    # Token pooling
+    x = layers.GlobalAveragePooling1D(name="gap")(x)
+
+    # Multi-horizon, multi-target head: matches declared TARGETS
+    out = layers.Dense(horizon * len(TARGETS), name="head_dense")(x)
+    out = layers.Reshape((horizon, len(TARGETS)), name="head_reshape")(out)
+
+    model = tf.keras.Model(inputs=inputs, outputs=out, name="ts_transformer_v2")
+    # Compile with the existing weighted multi-target loss for compatibility
+    opt = tf.keras.optimizers.legacy.Adam(learning_rate=3e-4)
+    model.compile(optimizer=opt, loss=weighted_mse_multi)
+    return model
 # -- 6. Build the time-series Transformer model --------------------------
 
 def build_transformer_model(
@@ -1501,16 +1572,18 @@ if __name__ == "__main__":
 
     if training:
         # Explicit hyperparameters (also logged)
-        D_MODEL, N_HEADS, D_FF, N_LAYERS = 64, 4, 128, 2
-        model = build_transformer_model(
+        D_MODEL, N_HEADS, D_FF, N_LAYERS = 128, 4, 256, 4
+        model = build_transformer_model_v2(
             seq_len=SEQ_LEN,
-            feature_dim=X_train.shape[-1],
-            window_out=HORIZON,
-            num_targets=NUM_TARGETS,
+            n_features=X_train.shape[-1],
+            horizon=HORIZON,
             d_model=D_MODEL,
-            num_heads=N_HEADS,
-            d_ff=D_FF,
-            num_layers=N_LAYERS,
+            n_heads=N_HEADS,
+            n_layers=N_LAYERS,
+            ffn_dim=D_FF,
+            dropout=0.1,
+            patch_kernel=4,
+            patch_stride=2,
         )
         model.summary()
 

@@ -283,10 +283,10 @@
             multi[ts] = { temp_c: temp, rain_mm: 0, cloudcover_pct: 0 };
           }
           [point, info, metrics] = await Promise.all([
-  loadJSON('prediction_point.json'),
-  loadJSON('model_info.json').catch(()=>null),
-  loadJSON('metrics.json').catch(()=>null),
-]);
+            loadJSON('prediction_point.json'),
+            loadJSON('model_info.json').catch(()=>null),
+            loadJSON('metrics.json').catch(()=>null),
+          ]);
         }
 
         // KPI header
