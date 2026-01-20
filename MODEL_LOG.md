@@ -85,3 +85,135 @@
 - **overall_accuracy**: 30.99354806705081
 - **commit**: d05d6b16909fa1f9dfd2900aeafd95282ab71c59
 - **branch**: main
+
+### 2026-01-14T22:32:26Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 521662601a3f54e547584a0fabc3907aa32797a0
+- **branch**: main
+
+### 2026-01-14T23:17:53Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 20e6a766f32705f01ec4ef64566e648cfdc2f41d
+- **branch**: main
+
+### 2026-01-15T22:31:45Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 0b3a5a9c1d77b01e26ef9166516c467b285ae4ae
+- **branch**: main
+
+### 2026-01-15T23:20:14Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: d204285d44c3fef8904a6d0147a538dfe6e87168
+- **branch**: main
+
+### 2026-01-16T22:31:03Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 0860d4da960d561686c34410cde1d209a0ba094e
+- **branch**: main
+
+### 2026-01-16T23:19:25Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: c70caeb74e766dc86f7f7dd4c10265c9d76b489a
+- **branch**: main
+
+### 2026-01-17T22:28:23Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 90b0f8bb497c98125195e95ead325a08ac6aa266
+- **branch**: main
+
+### 2026-01-17T23:18:37Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 4782862f8a4eca41e8a20280e81f1668bc130c20
+- **branch**: main
+
+### 2026-01-18T22:28:50Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.99354806705081
+- **commit**: 16478e87b10a4b2f1cfe46f5f2a9963ce0f9989c
+- **branch**: main
+
+### 2026-01-18T23:19:26Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.680481924959388
+- **commit**: f1d80e9e03a7dc86ad930d46e9c3a50f7e1e8c1c
+- **branch**: main
+
+### 2026-01-19T22:31:00Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.680481924959388
+- **commit**: 69874a262034727257655b75998bb92970a2124d
+- **branch**: main
+
+### 2026-01-19T23:19:54Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.373677105709795
+- **commit**: 03b3ad6ca510d3365ffbfb8a0ea7b0c43b3e520a
+- **branch**: main
