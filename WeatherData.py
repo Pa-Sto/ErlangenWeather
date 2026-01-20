@@ -988,6 +988,17 @@ def save_prediction(
     except Exception as e:
         print(f"[Warn] Could not write daily/history prediction files: {e}")
 
+    # Keep a daily history for multi-output predictions (temp/rain/cloud)
+    try:
+        _append_history_prediction(
+            "history_predictions_multi.json",
+            forecast_day,
+            multi,  # the full {ts: {temp_c, rain_mm, cloudcover_pct}} map
+            generated_at
+        )
+    except Exception as e:
+        print(f"[Warn] Could not write multi history: {e}")
+
     # Build a summary for logging/diagnostics
     summary = {
         "horizon_hours": H,
@@ -1265,6 +1276,7 @@ def compute_and_save_mse(
     multi_path: str = "prediction_multi.json",
     out_path: str = "metrics.json",
     min_lag_days: int = 5,
+    history_multi_path: str = "history_predictions_multi.json",
 ) -> None:
     """Compute MSE for temperature (°C), rain (mm/h), and cloudcover (%) by
     aligning past predictions to archive actuals. Safe no-op if inputs are missing.
@@ -1375,6 +1387,20 @@ def compute_and_save_mse(
     if not preds:
         print("[Metrics] No predictions available; skipping MSE")
         return
+
+    # Also load multi-output history (preferred for rain/cloud RMSE)
+    if os.path.exists(history_multi_path) and os.path.getsize(history_multi_path) > 0:
+        try:
+            histm = json.load(open(history_multi_path, "r", encoding="utf-8"))
+            if isinstance(histm, list):
+                for entry in histm:
+                    mp = entry.get("series") or {}
+                    if isinstance(mp, dict):
+                        _add_mapping(mp)
+            elif isinstance(histm, dict):
+                _add_mapping(histm)
+        except Exception as e:
+            print(f"[Metrics] Failed reading {history_multi_path}: {e}")
 
     P = pd.DataFrame(preds).dropna(subset=["ts"]).sort_values("ts")
     # Normalize prediction timestamps to UTC-naive for safe comparison
