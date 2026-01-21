@@ -1,219 +1,112 @@
+# ErlangenWeather — Model Evolution & Design Notes
 
-### 2026-01-06T20:44:12Z — predict
+> This document is **curated manually** to explain the big-picture evolution of our local deep-learning weather model for Erlangen (49.59, 11.00).  
+> We only record **milestone versions** here (V0, V0.1, …). Routine training runs remain in `model_log.txt` (JSONL) for internal reproducibility.
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 31.327869443548014
-- **commit**: cb28b080e492422b628abb539972600047b3010b
-- **branch**: main
+---
 
-### 2026-01-12T19:55:42Z — predict
+## TL;DR (current public model)
+- **Version:** V0.1  
+- **Horizon:** 72 h (3 days, hourly)  
+- **Targets:** Temperature (°C), Rain (mm/h), Cloud cover (%)  
+- **Input window:** 10 days (240 h), stride 24 h  
+- **Feature set (27 features total):**  
+  - *Meteorology (9):* `temperature_2m`, `relativehumidity_2m`, `pressure_msl`, `windspeed_10m`, `winddirection_10m`, `cloudcover`, `shortwave_radiation`, `precipitation`, `rain`  
+  - *Derived (6):* `wind_u_10m`, `wind_v_10m`, `dewpoint_2m`, `dp_dt_3h`, `temp_prev_day`, `temp_delta_prev_day`  
+  - *Time (12):* hour/dow/doy/month + their sin/cos, `timestamp`
+- **Architecture:** Transformer encoder with 1-D **patching** (Conv1D k=4, s=2), `d_model=128`, `heads=4`, `layers=4`, `ffn=256`, `dropout=0.1`  
+- **Loss:** time-decayed, channel-weighted MSE (temp×1, rain×3, cloud×0.5)  
+- **Data:** ERA5 archive for training/metrics; Open-Meteo forecast (near-real-time) for daily updates  
+- **Deployment:** GitHub Actions daily @ **00:01 Europe/Berlin** → GitHub Pages
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: de0fce0a28c545567121468606b54576d403324f
-- **branch**: main
+---
 
-### 2026-01-12T20:23:20Z — predict
+## Why milestones?
+We iterate frequently. To keep this page readable, we summarize only **meaningful releases** (Vx.y). Detailed per-run logs (hyper-params, timing, val-loss curves) are still captured to `model_log.txt` (JSONL).
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 133832bbff537b9f90dfb522c257e616c8dac77e
-- **branch**: main
+---
 
-### 2026-01-12T20:28:57Z — predict
+## Version history
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 133832bbff537b9f90dfb522c257e616c8dac77e
-- **branch**: main
+### V0 — First public prototype (temperature only)
+**Period:** 2025-08 → 2025-12  
+**Goal:** End-to-end pipeline (data → model → CI → site) for 24 h temperature (°C) forecast.
 
-### 2026-01-13T11:17:08Z — train
+**Highlights**
+- **Targets:** Temperature only (24 steps)  
+- **Inputs:** ~26 features (ERA5 + time features)  
+- **Architecture:** Transformer v1 (CLS + sinusoidal PE), `d_model=64`, `heads=4`, `layers=2`, `ffn=128`  
+- **Loss:** time-decayed MSE (near-term > long-term)  
+- **Training:** 10 d → 1 d; batch=64; max 100 epochs; EarlyStopping(p=5)  
+- **Deployment:** Daily CI; `prediction.json` + point summary; single skill vs. persistence metric
 
-- **source**: archive
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **n_features**: 28
-- **n_train_windows**: 24785
-- **n_val_windows**: 6200
-- **best_val_loss**: 1.2876464128494263
-- **final_val_loss**: 1.2952016592025757
-- **epochs_run**: 12
-- **train_seconds**: 1679
-- **d_model**: 128
-- **num_heads**: 4
-- **d_ff**: 256
-- **num_layers**: 4
-- **commit**: 18011f552967a4fd31904cf61c71d854dd23bf3c
-- **branch**: main
+**Limitations / Lessons**
+- Captured diurnal cycle; struggled with fronts/precip events (no precip target).  
+- Single target limited the website’s usefulness.  
+- “% vs persistence” is OK for experts, harder to explain to general users.
 
-### 2026-01-13T11:17:12Z — predict
+---
 
-- **source**: archive
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 18011f552967a4fd31904cf61c71d854dd23bf3c
-- **branch**: main
+### V0.1 — Multi-target, 3-day horizon, patching transformer *(current)*
+**Released:** 2026-01  
+**Goal:** 72 h horizon, **3 targets** (temp/rain/cloud), better temporal context with patching.
 
-### 2026-01-14T10:51:24Z — predict
+**What changed**
+- **Targets:** `temperature_2m (°C)`, `rain (mm/h)`, `cloudcover (%)` (72 hourly steps)  
+- **Inputs (27 features):** 9 meteo + 6 derived + 12 time features (see TL;DR)  
+- **Windowing:** 10 d (240 h) input, stride 24 h → 3 d (72 h) output  
+- **Architecture:** Encoder-only Transformer + **Conv1D patching** (k=4, s=2)  
+  — `d_model=128`, `heads=4`, `layers=4`, `ffn=256`, `dropout=0.1`  
+- **Loss:** Weighted multi-output MSE with time decay (1.0 → 0.5 across horizon)  
+  — channel weights: temp×1, rain×3, cloud×0.5  
+- **Optim:** Adam(3e-4), ReduceLROnPlateau(p=3,×0.5), EarlyStopping(p=5), batch=64  
+- **Metrics (site):** RMSE for T/Rain/Cloud with 5-day lag (archive availability) + sample counts; legacy skill vs persistence retained
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: d05d6b16909fa1f9dfd2900aeafd95282ab71c59
-- **branch**: main
+**Impact**
+- More stable multi-day evolution (frontal passages, cloud variability) via patching + longer horizon.  
+- New rain/cloud forecasts + mini-charts; daily totals and min/max temps shown.
 
-### 2026-01-14T22:32:26Z — predict
+**Known limitations**
+- Rain is intermittent & skewed → MSE under-penalizes false alarms on dry hours and underweights rare heavy bursts.  
+- Single-grid-point input (no spatial context).  
+- Deterministic outputs (no uncertainty quantiles yet).
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 521662601a3f54e547584a0fabc3907aa32797a0
-- **branch**: main
+**Planned (V0.2)**
+- **Probabilistic rain** (calibrated PoP or quantile regression / pinball loss)  
+- **Multi-resolution time modeling** (larger patch size + cross-scale fusion)  
+- **Spatial context** (neighbor tiles or learned local embeddings)  
+- **Exogenous nowcasts/radar** when available  
+- **Stronger baselines** (MOS-like diurnal/persistence blends for clearer skill)
 
-### 2026-01-14T23:17:53Z — predict
+---
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 20e6a766f32705f01ec4ef64566e648cfdc2f41d
-- **branch**: main
+## What we record per milestone (for transparency)
+1. **Version & release date**  
+2. **Horizon & targets** (e.g., 72 h; temp/rain/cloud)  
+3. **Data & span** (ERA5 range, forecast window, TZ, coordinates)  
+4. **Input windowing** (days × hours, stride, #features, feature list, scaling)  
+5. **Architecture** (type, d_model, heads, layers, FFN, dropout, patch k/s)  
+6. **Loss & training setup** (weights/shape, optimizer, LR schedule, batch, epochs, early-stop)  
+7. **Metrics** (RMSE per target; skill vs persistence; sample counts; lag window)  
+8. **Release notes** (what & why)  
+9. **Limitations** (known failure modes)  
+10. **Repro snippet** (commands + prerequisites)
 
-### 2026-01-15T22:31:45Z — predict
+---
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 0b3a5a9c1d77b01e26ef9166516c467b285ae4ae
-- **branch**: main
+## Reproduce (current V0.1)
 
-### 2026-01-15T23:20:14Z — predict
+```bash
+# Train locally (once), then commit the trained `model/` directory
+python3 WeatherData.py \
+  --source archive \
+  --download-data --days 365 \
+  --extend-to-present \
+  --lat 49.59 --lon 11.00
 
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: d204285d44c3fef8904a6d0147a538dfe6e87168
-- **branch**: main
-
-### 2026-01-16T22:31:03Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 0860d4da960d561686c34410cde1d209a0ba094e
-- **branch**: main
-
-### 2026-01-16T23:19:25Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: c70caeb74e766dc86f7f7dd4c10265c9d76b489a
-- **branch**: main
-
-### 2026-01-17T22:28:23Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 90b0f8bb497c98125195e95ead325a08ac6aa266
-- **branch**: main
-
-### 2026-01-17T23:18:37Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 4782862f8a4eca41e8a20280e81f1668bc130c20
-- **branch**: main
-
-### 2026-01-18T22:28:50Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.99354806705081
-- **commit**: 16478e87b10a4b2f1cfe46f5f2a9963ce0f9989c
-- **branch**: main
-
-### 2026-01-18T23:19:26Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.680481924959388
-- **commit**: f1d80e9e03a7dc86ad930d46e9c3a50f7e1e8c1c
-- **branch**: main
-
-### 2026-01-19T22:31:00Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.680481924959388
-- **commit**: 69874a262034727257655b75998bb92970a2124d
-- **branch**: main
-
-### 2026-01-19T23:19:54Z — predict
-
-- **source**: forecast
-- **targets**: ["temperature_2m", "rain", "cloudcover"]
-- **seq_days**: 10
-- **label_days**: 3
-- **horizon_hours**: 72
-- **overall_accuracy**: 30.373677105709795
-- **commit**: 03b3ad6ca510d3365ffbfb8a0ea7b0c43b3e520a
-- **branch**: main
+# Daily prediction (CI uses forecast source for near-real-time features)
+python3 WeatherData.py \
+  --predict-only \
+  --source forecast --past-days 20 --forecast-days 3 \
+  --extend-to-present \
+  --lat 49.59 --lon 11.00
