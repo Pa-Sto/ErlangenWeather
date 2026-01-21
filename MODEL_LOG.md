@@ -110,3 +110,13 @@ python3 WeatherData.py \
   --source forecast --past-days 20 --forecast-days 3 \
   --extend-to-present \
   --lat 49.59 --lon 11.00
+### 2026-01-21T22:35:11Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 30.302786189369023
+- **commit**: 3a7bb486790814b3a5467529afc1eb23bc51cf69
+- **branch**: main
