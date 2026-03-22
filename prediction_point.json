@@ -6,10 +6,10 @@
   "start_time": "2026-03-21T23:00:00",
   "forecast_day": "2026-03-22",
   "forecast_day_name": "Sunday",
-  "generated_at": "2026-03-21T23:24:00Z",
-  "max_temp_c": 9.562878608703613,
+  "generated_at": "2026-03-22T22:35:52Z",
+  "max_temp_c": 9.586661338806152,
   "max_time": "2026-03-22T15:00:00",
-  "min_temp_c": 5.12000846862793,
+  "min_temp_c": 5.104829788208008,
   "min_time": "2026-03-22T05:00:00",
-  "mean_temp_c": 7.353098074595134
+  "mean_temp_c": 7.366884317662981
 }
