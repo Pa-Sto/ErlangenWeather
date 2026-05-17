@@ -2661,3 +2661,14 @@ python3 WeatherData.py \
 - **overall_accuracy**: 17.858984828305626
 - **commit**: 0c1fb68facef0a754f0db52c5025c7056034620b
 - **branch**: main
+
+### 2026-05-17T23:57:31Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 17.858984828305626
+- **commit**: 8c997f4ef1c092a78fa5e481fc16639db8db658e
+- **branch**: main
