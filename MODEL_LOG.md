@@ -1,7 +1,7 @@
 # ErlangenWeather — Model Evolution & Design Notes
 
 > This document is **curated manually** to explain the big-picture evolution of our local deep-learning weather model for Erlangen (49.59, 11.00).  
-> We only record **milestone versions** here (V0, V0.1, …). Routine training runs remain in `model_log.txt` (JSONL) for internal reproducibility.
+> We only record **milestone versions** here (V0, V0.1, …). Routine published runs are stored under `site/data/history/logs/`, while local experiment logs stay under `runs/local/<timestamp>/logs/`.
 
 ---
 
@@ -22,7 +22,7 @@
 ---
 
 ## Why milestones?
-We iterate frequently. To keep this page readable, we summarize only **meaningful releases** (Vx.y). Detailed per-run logs (hyper-params, timing, val-loss curves) are still captured to `model_log.txt` (JSONL).
+We iterate frequently. To keep this page readable, we summarize only **meaningful releases** (Vx.y). Detailed per-run logs (hyper-params, timing, val-loss curves) are captured under `site/data/history/logs/` for published runs and `runs/local/<timestamp>/logs/` for local experiments.
 
 ---
 
@@ -38,7 +38,7 @@ We iterate frequently. To keep this page readable, we summarize only **meaningfu
 - **Architecture:** Transformer v1 (CLS + sinusoidal PE), `d_model=64`, `heads=4`, `layers=2`, `ffn=128`  
 - **Loss:** time-decayed MSE (near-term > long-term)  
 - **Training:** 10 d → 1 d; batch=64; max 100 epochs; EarlyStopping(p=5)  
-- **Deployment:** Daily CI; `prediction.json` + point summary; single skill vs. persistence metric
+- **Deployment:** Daily CI; current forecast files under `site/data/current/`; single skill vs. persistence metric
 
 **Limitations / Lessons**
 - Captured diurnal cycle; struggled with fronts/precip events (no precip target).  

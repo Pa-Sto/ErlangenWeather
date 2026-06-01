@@ -7,19 +7,19 @@ This note focuses on the days where Erlangen's daily mean temperature changed th
 ## Reading guide
 
 - Orange line: actual hourly temperature from `historical_data.csv`.
-- Blue line: model prediction from `history_predictions.json`.
+- Blue line: model prediction from `site/data/history/history_predictions.json`.
 - Strong underreaction means the model is acting too much like persistence.
 
 ## Strongest transition days
 
 | Date | Actual delta (C) | Pred delta (C) | Gap (C) | Comment |
 |---|---:|---:|---:|---|
-| 2025-09-22 | -7.82 | -3.03 | +4.78 | underreacted |
-| 2025-11-24 | +5.80 | +1.61 | -4.18 | underreacted |
-| 2026-01-13 | +5.45 | -0.46 | -5.92 | underreacted |
-| 2025-12-08 | +5.00 | +1.84 | -3.16 | underreacted |
-| 2026-02-06 | +4.96 | +3.06 | -1.91 | underreacted |
-| 2026-01-11 | -4.61 | +0.59 | +5.20 | underreacted |
+| 2026-05-12 | -6.13 | -0.54 | +5.59 | underreacted |
+| 2026-02-21 | +5.89 | +0.17 | -5.72 | underreacted |
+| 2025-11-24 | +5.44 | +1.61 | -3.83 | underreacted |
+| 2026-01-14 | +5.30 | +1.48 | -3.82 | underreacted |
+| 2025-12-08 | +5.04 | +1.84 | -3.20 | underreacted |
+| 2026-04-04 | +4.55 | +0.10 | -4.46 | underreacted |
 
 ## Main takeaway
 

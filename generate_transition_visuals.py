@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent
 VIS_DIR = ROOT / "visuals"
 SVG_PATH = VIS_DIR / "temperature_transition_cases.svg"
 MD_PATH = ROOT / "TEMPERATURE_TRANSITIONS.md"
+PREDICTION_HISTORY_PATH = ROOT / "site" / "data" / "history" / "history_predictions.json"
 
 
 def load_predictions(path: Path) -> pd.DataFrame:
@@ -43,7 +44,7 @@ def build_transition_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
     actuals = actuals[["temperature_2m"]].copy()
     actuals["ts"] = actuals.index
 
-    preds = load_predictions(ROOT / "history_predictions.json")
+    preds = load_predictions(PREDICTION_HISTORY_PATH)
     merged = preds.merge(actuals, on="ts", how="inner")
     merged["date"] = merged["ts"].dt.floor("D")
 
@@ -224,7 +225,7 @@ def render_markdown(cases, daily_top):
         "## Reading guide",
         "",
         "- Orange line: actual hourly temperature from `historical_data.csv`.",
-        "- Blue line: model prediction from `history_predictions.json`.",
+        "- Blue line: model prediction from `site/data/history/history_predictions.json`.",
         "- Strong underreaction means the model is acting too much like persistence.",
         "",
         "## Strongest transition days",
