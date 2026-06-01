@@ -148,6 +148,42 @@
     "epochs": 100,
     "batch_size": 64
   },
+  "evaluation": {
+    "source": "site/data/history/",
+    "min_lag_days": 5,
+    "baselines": {
+      "temperature_c_rmse": 3.171,
+      "rain_mm_per_h_rmse": 0.055,
+      "cloudcover_pct_rmse": 56.848
+    },
+    "rmse": {
+      "temperature_c": 3.532,
+      "rain_mm_per_h": 0.220,
+      "cloudcover_pct": 39.868
+    },
+    "n_points": {
+      "temperature_c": 12027,
+      "rain_mm_per_h": 9123,
+      "cloudcover_pct": 9123
+    },
+    "lead_bins": {
+      "temperature_c": {
+        "0_24h": 3.069,
+        "24_48h": 3.804,
+        "48_72h": 3.974
+      },
+      "rain_mm_per_h": {
+        "0_24h": 0.216,
+        "24_48h": 0.220,
+        "48_72h": 0.223
+      },
+      "cloudcover_pct": {
+        "0_24h": 37.791,
+        "24_48h": 40.068,
+        "48_72h": 41.682
+      }
+    }
+  },
   "files": {
     "current": "site/data/current/",
     "history": "site/data/history/",

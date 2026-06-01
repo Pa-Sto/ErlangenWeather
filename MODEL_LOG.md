@@ -71,17 +71,17 @@ The current published-history evaluation uses `site/data/history/` and ignores p
 
 | Target | RMSE | Baseline | Delta | Points |
 |---|---:|---:|---:|---:|
-| Temperature | `3.530 C` | `3.171 C` | `+0.359` | `12,018` |
-| Rain | `0.220 mm/h` | `0.055 mm/h` | `+0.165` | `9,114` |
-| Cloud cover | `39.876 %` | `56.848 %` | `-16.972` | `9,114` |
+| Temperature | `3.532 C` | `3.171 C` | `+0.361` | `12,027` |
+| Rain | `0.220 mm/h` | `0.055 mm/h` | `+0.165` | `9,123` |
+| Cloud cover | `39.868 %` | `56.848 %` | `-16.980` | `9,123` |
 
 Lead-time view:
 
 | Target | 0-24h | 24-48h | 48-72h |
 |---|---:|---:|---:|
-| Temperature | `3.067 C` | `3.800 C` | `3.972 C` |
+| Temperature | `3.069 C` | `3.804 C` | `3.974 C` |
 | Rain | `0.216 mm/h` | `0.220 mm/h` | `0.223 mm/h` |
-| Cloud cover | `37.799 %` | `40.074 %` | `41.690 %` |
+| Cloud cover | `37.791 %` | `40.068 %` | `41.682 %` |
 
 ## Temperature Transitions
 
