@@ -6,6 +6,7 @@ from tensorflow.keras import layers
 from typing import List
 import json
 import os
+import shutil
 from datetime import datetime, timedelta, date
 import time
 import sys
@@ -32,6 +33,42 @@ TARGETS = ["temperature_2m", "rain", "cloudcover"]  # 3-target training/predicti
 NUM_TARGETS = len(TARGETS)
 SEQ_DAYS = 10
 LABEL_DAYS = 3
+
+
+def _ensure_parent_dir(path: str):
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+
+def _write_json(path: str, payload):
+    _ensure_parent_dir(path)
+    with open(path, "w") as f:
+        json.dump(payload, f, indent=2)
+
+
+def _default_local_run_dir(timezone: str = "Europe/Berlin") -> str:
+    ts = datetime.now(gettz(timezone)).strftime("%Y%m%d_%H%M%S")
+    return os.path.join("runs", "local", ts)
+
+
+def _build_output_paths(current_dir: str, history_dir: str, log_dir: str) -> dict:
+    return {
+        "current_dir": current_dir,
+        "history_dir": history_dir,
+        "log_jsonl": os.path.join(log_dir, "model_log.txt"),
+        "log_md": os.path.join(log_dir, "MODEL_LOG.md"),
+        "prediction": os.path.join(current_dir, "prediction.json"),
+        "prediction_multi": os.path.join(current_dir, "prediction_multi.json"),
+        "prediction_point": os.path.join(current_dir, "prediction_point.json"),
+        "metrics": os.path.join(current_dir, "metrics.json"),
+        "accuracy_overall": os.path.join(current_dir, "accuracy_overall.json"),
+        "accuracy_daily": os.path.join(current_dir, "accuracy_daily.json"),
+        "model_info": os.path.join(current_dir, "model_info.json"),
+        "history_predictions": os.path.join(history_dir, "history_predictions.json"),
+        "history_predictions_multi": os.path.join(history_dir, "history_predictions_multi.json"),
+        "daily_predictions_dir": os.path.join(history_dir, "daily"),
+    }
 
 def normalize_hourly_variables(variables: List[str]) -> List[str]:
     normalized = [OPEN_METEO_HOURLY_ALIASES.get(v, v) for v in variables]
@@ -176,12 +213,14 @@ def _append_model_log(entry: dict, jsonl_path: str = "model_log.txt", md_path: s
     entry.setdefault("timestamp", ts)
     # JSONL append
     try:
+        _ensure_parent_dir(jsonl_path)
         with open(jsonl_path, "a") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception as e:
         print(f"[Log] Could not append {jsonl_path}: {e}")
     # Markdown append
     try:
+        _ensure_parent_dir(md_path)
         with open(md_path, "a") as f:
             f.write(f"\n### {entry.get('timestamp')} — {entry.get('event','event')}\n\n")
             order = [
@@ -668,6 +707,26 @@ def weighted_mse(y_true, y_pred):
     return tf.reduce_mean(w * sq_err)     # mean over batch and horizon
 
 # --- Robust model loader for custom loss ---
+class _SavedModelPredictor:
+    def __init__(self, path: str):
+        module = tf.saved_model.load(path)
+        signatures = list(module.signatures.keys())
+        if not signatures:
+            raise ValueError(f"No signatures found in SavedModel at {path}")
+        endpoint = "serving_default" if "serving_default" in signatures else signatures[0]
+        self.fn = module.signatures[endpoint]
+        kw = self.fn.structured_input_signature[1]
+        if not kw:
+            raise ValueError(f"SavedModel at {path} has no keyword input signature")
+        self.input_name, spec = next(iter(kw.items()))
+        self.input_shape = tuple(spec.shape.as_list())
+
+    def predict(self, x):
+        outputs = self.fn(**{self.input_name: tf.convert_to_tensor(x, dtype=tf.float32)})
+        first = next(iter(outputs.values()))
+        return first.numpy()
+
+
 def load_model_safe(path: str):
     """Load a Keras model handling custom loss 'weighted_mse'.
     Tries with custom_objects first, then falls back to compile=False for inference-only.
@@ -676,7 +735,13 @@ def load_model_safe(path: str):
         return load_model(path, custom_objects={"weighted_mse": weighted_mse, "weighted_mse_multi": weighted_mse_multi})
     except Exception as e1:
         print(f"[Model] load_model with custom_objects failed: {e1}\n[Model] Retrying with compile=False …")
-        return load_model(path, compile=False)
+        try:
+            return load_model(path, compile=False)
+        except Exception as e2:
+            if os.path.isdir(path):
+                print(f"[Model] compile=False load failed: {e2}\n[Model] Falling back to SavedModel signature loader …")
+                return _SavedModelPredictor(path)
+            raise
 
 # ---------------------------------------------
 # Transformer v2 with patching (Conv1D stride=2)
@@ -837,16 +902,20 @@ def save_prediction(
     lat: float = None,
     lon: float = None,
     output_file: str = 'prediction.json',
+    multi_output_file: str = 'prediction_multi.json',
     point_file: str = 'prediction_point.json',
+    history_file: str = 'history_predictions.json',
+    history_multi_file: str = 'history_predictions_multi.json',
+    daily_predictions_dir: str = "predictions",
     timezone: str = 'Europe/Berlin',
 ):
     """
     Predicts next horizon with the trained model. Supports multi-output (H, C) where
     channels correspond to TARGETS. Writes:
-      - prediction_multi.json : {ts: {temp_c, precip_mm, rain_mm, cloudcover_pct}}
-      - prediction.json       : {ts: temp_c}  (for backward compatibility)
-      - prediction_point.json : summary for temperature channel
-      - updates history_predictions.json
+      - multi_output_file : {ts: {temp_c, precip_mm, rain_mm, cloudcover_pct}}
+      - output_file       : {ts: temp_c}  (for backward compatibility)
+      - point_file        : summary for temperature channel
+      - updates history_file/history_multi_file
     """
     last_window = X_val[-1:]
     # --- Compatibility shim: align features with model's expected input width ---
@@ -938,10 +1007,8 @@ def save_prediction(
         multi[ts] = entry
         temp_only[ts] = entry["temp_c"]
 
-    with open('prediction_multi.json', 'w') as f:
-        json.dump(multi, f, indent=2)
-    with open(output_file, 'w') as f:
-        json.dump(temp_only, f, indent=2)
+    _write_json(multi_output_file, multi)
+    _write_json(output_file, temp_only)
 
     # Temperature summary point
     temps = np.array([v["temp_c"] for v in multi.values()], dtype=float)
@@ -965,12 +1032,11 @@ def save_prediction(
         'min_time': t_min,
         'mean_temp_c': float(np.nanmean(temps)),
     }
-    with open(point_file, 'w') as f:
-        json.dump(point_summary, f, indent=2)
+    _write_json(point_file, point_summary)
 
     # Persist temp-only series for accuracy
     try:
-        os.makedirs("predictions", exist_ok=True)
+        os.makedirs(daily_predictions_dir, exist_ok=True)
         daily_payload = {
             "meta": {
                 "forecast_day": forecast_day,
@@ -981,17 +1047,16 @@ def save_prediction(
             },
             "series": temp_only
         }
-        daily_path = os.path.join("predictions", f"pred_{forecast_day}.json")
-        with open(daily_path, "w") as f:
-            json.dump(daily_payload, f, indent=2)
-        _append_history_prediction("history_predictions.json", forecast_day, temp_only, generated_at)
+        daily_path = os.path.join(daily_predictions_dir, f"pred_{forecast_day}.json")
+        _write_json(daily_path, daily_payload)
+        _append_history_prediction(history_file, forecast_day, temp_only, generated_at)
     except Exception as e:
         print(f"[Warn] Could not write daily/history prediction files: {e}")
 
     # Keep a daily history for multi-output predictions (temp/rain/cloud)
     try:
         _append_history_prediction(
-            "history_predictions_multi.json",
+            history_multi_file,
             forecast_day,
             multi,  # the full {ts: {temp_c, rain_mm, cloudcover_pct}} map
             generated_at
@@ -1009,7 +1074,7 @@ def save_prediction(
 
     print(f"[Predict] Wrote {H} hourly values × {C} channel(s) spanning {(H//24)} day(s).")
     print('Prediction (temp only) written to', output_file)
-    print('Multi-output prediction written to prediction_multi.json')
+    print('Multi-output prediction written to', multi_output_file)
     print('Summary point written to', point_file)
 
     return summary
@@ -1071,6 +1136,7 @@ def _ensure_cache_has_days(cache_file: str, latitude: float, longitude: float, d
 def update_accuracy_from_history(cache_file: str,
                                  history_file: str = "history_predictions.json",
                                  overall_file: str = "accuracy_overall.json",
+                                 daily_file: str = "accuracy_daily.json",
                                  timezone: str = "Europe/Berlin",
                                  min_age_days: int = 5):
     """Compute a single accuracy % using skill vs persistence baseline.
@@ -1163,11 +1229,9 @@ def update_accuracy_from_history(cache_file: str,
         "updated_at": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
         "definition": "100*(1 - MSE_model/MSE_persistence) clipped to [0,100]",
     }
-    with open(overall_file, "w") as f:
-        json.dump(payload, f, indent=2)
+    _write_json(overall_file, payload)
     # Also write per-day breakdown (optional)
-    with open("accuracy_daily.json", "w") as f:
-        json.dump(daily_percents, f, indent=2)
+    _write_json(daily_file, daily_percents)
     print(f"[Accuracy] Overall accuracy: {overall:.1f}% over {len(daily_percents)} day(s)")
 
 def save_accuracy(*args, **kwargs):
@@ -1180,6 +1244,7 @@ def save_accuracy(*args, **kwargs):
             cache_file=kwargs.get("cache_file", "historical_data.csv"),
             history_file="history_predictions.json",
             overall_file="accuracy_overall.json",
+            daily_file=kwargs.get("daily_file", "accuracy_daily.json"),
             timezone="Europe/Berlin",
         )
         print("[Accuracy] accuracy_overall.json updated.")
@@ -1464,8 +1529,7 @@ def compute_and_save_mse(
         },
     }
     try:
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(out, f, indent=2)
+        _write_json(out_path, out)
         print(f"[Metrics] Saved MSE metrics to {out_path}")
     except Exception as e:
         print(f"[Metrics] Failed writing {out_path}: {e}")
@@ -1482,6 +1546,16 @@ if __name__ == "__main__":
     parser.add_argument("--cache-file", type=str, default="historical_data.csv", help="Path to CSV cache file")
     parser.add_argument("--lat", type=float, default=49.59)
     parser.add_argument("--lon", type=float, default=11.00)
+    parser.add_argument("--site-current-dir", type=str, default=None,
+                        help="Directory for published current forecast files (used by the website/GitHub Actions).")
+    parser.add_argument("--site-history-dir", type=str, default=None,
+                        help="Directory for published history files (used by the website/GitHub Actions).")
+    parser.add_argument("--run-dir", type=str, default=None,
+                        help="Root directory for local run outputs. Defaults to runs/local/<timestamp> when no site dirs are given.")
+    parser.add_argument("--log-dir", type=str, default=None,
+                        help="Directory for model logs. Defaults to the local run logs dir unless site dirs are provided.")
+    parser.add_argument("--model-path", type=str, default=None,
+                        help="Path to the model artifact for save/load. Defaults to model.keras for training and model/ or model.keras for predict-only.")
     parser.add_argument("--source", type=str, choices=["archive", "forecast"], default="archive",
                         help="Data source for feature dataframe: 'archive' (ERA5, delayed) or 'forecast' (past_days, near real-time)")
     parser.add_argument("--past-days", type=int, default=10, help="When --source=forecast, include this many past days")
@@ -1496,6 +1570,40 @@ if __name__ == "__main__":
     days = args.days
     cache_file = args.cache_file
     LAT, LON = args.lat, args.lon
+
+    published_mode = bool(args.site_current_dir or args.site_history_dir)
+    if published_mode:
+        current_dir = args.site_current_dir or os.path.join("site", "data", "current")
+        history_dir = args.site_history_dir or os.path.join("site", "data", "history")
+        log_dir = args.log_dir or "."
+        run_dir = None
+    else:
+        run_dir = args.run_dir or _default_local_run_dir()
+        current_dir = os.path.join(run_dir, "current")
+        history_dir = os.path.join(run_dir, "history")
+        log_dir = args.log_dir or os.path.join(run_dir, "logs")
+
+    output_paths = _build_output_paths(current_dir, history_dir, log_dir)
+    for path in [output_paths["current_dir"], output_paths["history_dir"], output_paths["daily_predictions_dir"], log_dir]:
+        os.makedirs(path, exist_ok=True)
+    if os.path.exists("model_info.json") and os.path.abspath(output_paths["model_info"]) != os.path.abspath("model_info.json"):
+        shutil.copyfile("model_info.json", output_paths["model_info"])
+
+    if args.model_path:
+        model_path = args.model_path
+    elif training:
+        model_path = "model.keras"
+    elif os.path.exists("model"):
+        model_path = "model"
+    else:
+        model_path = "model.keras"
+
+    mode_label = "published" if published_mode else "local"
+    print(f"[Outputs] Mode: {mode_label}")
+    print(f"[Outputs] Current files: {output_paths['current_dir']}")
+    print(f"[Outputs] History files: {output_paths['history_dir']}")
+    if run_dir:
+        print(f"[Outputs] Local run root: {run_dir}")
 
     # fetch & prep (with caching)
     vars = [
@@ -1628,7 +1736,7 @@ if __name__ == "__main__":
         train_seconds = int(time.time() - t0)
 
         # Save without optimizer state; we only need inference in CI / predict-only
-        model.save("model", include_optimizer=False)
+        model.save(model_path, include_optimizer=False)
 
         # ---- Log training event ----
         hist = history.history
@@ -1658,27 +1766,32 @@ if __name__ == "__main__":
             "d_ff": D_FF,
             "num_layers": N_LAYERS,
             **git,
-        })
+        }, jsonl_path=output_paths["log_jsonl"], md_path=output_paths["log_md"])
     else:
-        if not os.path.exists("model"):
-            raise SystemExit("[Model] No saved model found at 'model'. Train once locally (run without --predict-only) or commit the 'model/' directory.")
-        model = load_model_safe("model")
+        if not os.path.exists(model_path):
+            raise SystemExit(f"[Model] No saved model found at '{model_path}'. Train once locally or provide --model-path.")
+        model = load_model_safe(model_path)
     # Save outputs via helper functions and capture summary for logging
     pred_summary = save_prediction(
         model, X_val, df,
         seq_len=SEQ_LEN, split=split, stride=24,
         mean=mean, std=std, target_idx=target_idx,
         lat=LAT, lon=LON,
-        output_file='prediction.json',
-        point_file='prediction_point.json',
+        output_file=output_paths["prediction"],
+        multi_output_file=output_paths["prediction_multi"],
+        point_file=output_paths["prediction_point"],
+        history_file=output_paths["history_predictions"],
+        history_multi_file=output_paths["history_predictions_multi"],
+        daily_predictions_dir=output_paths["daily_predictions_dir"],
         timezone='Europe/Berlin',
     )
     # (Obsolete: legacy accuracy.json output removed)
     # Update single-number accuracy (vs persistence baseline) from saved history
     update_accuracy_from_history(
         cache_file=cache_file,
-        history_file="history_predictions.json",
-        overall_file="accuracy_overall.json",
+        history_file=output_paths["history_predictions"],
+        overall_file=output_paths["accuracy_overall"],
+        daily_file=output_paths["accuracy_daily"],
         timezone="Europe/Berlin",
         min_age_days=5,
     )
@@ -1686,17 +1799,18 @@ if __name__ == "__main__":
     try:
         compute_and_save_mse(
             cache_csv=cache_file,
-            history_path="history_predictions.json",
-            multi_path="prediction_multi.json",
-            out_path="metrics.json",
+            history_path=output_paths["history_predictions"],
+            multi_path=output_paths["prediction_multi"],
+            out_path=output_paths["metrics"],
             min_lag_days=5,
+            history_multi_path=output_paths["history_predictions_multi"],
         )
     except Exception as _e:
         print(f"[Metrics] Skipped MSE computation: {_e}")    # ---- Log prediction event ----
 
     overall_acc = None
     try:
-        with open("accuracy_overall.json", "r") as f:
+        with open(output_paths["accuracy_overall"], "r") as f:
             overall_acc = float(json.load(f).get("accuracy_percent"))
     except Exception:
         pass
@@ -1716,6 +1830,6 @@ if __name__ == "__main__":
             "generated_at": pred_summary.get("generated_at") if isinstance(pred_summary, dict) else None,
             "overall_accuracy": overall_acc,
             **git,
-        })
+        }, jsonl_path=output_paths["log_jsonl"], md_path=output_paths["log_md"])
     except Exception as e:
         print(f"[Log] Skipped writing prediction log: {e}")

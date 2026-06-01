@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1420" height="1235" viewBox="0 0 1420 1235">
+<rect width="100%" height="100%" fill="#f8f6f1"/>
+<text x="60" y="62" font-family="Georgia, serif" font-size="34" fill="#1a2630">Temperature Transition Days</text>
+<text x="60" y="96" font-family="Arial, sans-serif" font-size="17" fill="#5f6871">Actual vs predicted hourly temperature curves for the strongest day-to-day jumps in the scored history.</text>
+<rect x="1010" y="28" width="350" height="108" rx="18" fill="#13212f"/>
+<text x="1185" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#d9e7f2">Current reading</text>
+<text x="1185" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">The model catches the direction of jumps,</text>
+<text x="1185" y="116" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">but still underestimates their size.</text>
+<rect x="60" y="160" width="640" height="360" rx="22" fill="#fffdf8" stroke="#d9d2c7" stroke-width="2"/>
+<text x="380.0" y="198" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#1d2832">2025-09-22</text>
+<text x="380.0" y="228" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#5f6871">Actual daily mean jump -7.82 C, predicted -3.03 C</text>
+<line x1="88" y1="448" x2="672" y2="448" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="88" y1="258" x2="88" y2="448" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="88.0" y1="258" x2="88.0" y2="448" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="90.0" y="472" text-anchor="start" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D-1 00</text>
+<line x1="380.0" y1="258" x2="380.0" y2="448" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="380.0" y="472" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D 00</text>
+<line x1="672.0" y1="258" x2="672.0" y2="448" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="670.0" y="472" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D+1 00</text>
+<path d="M 88.0 303.2 L 100.4 306.3 L 112.9 310.8 L 125.3 317.9 L 137.7 314.9 L 150.1 317.9 L 162.6 319.5 L 175.0 313.9 L 187.4 302.2 L 199.8 289.0 L 212.3 277.8 L 224.7 271.7 L 237.1 273.7 L 249.5 273.7 L 262.0 265.6 L 274.4 269.7 L 286.8 275.8 L 299.2 286.4 L 311.7 296.1 L 324.1 302.2 L 336.5 305.8 L 348.9 310.8 L 361.4 320.5 L 373.8 324.6 L 386.2 322.5 L 398.6 325.1 L 411.1 332.2 L 423.5 333.7 L 435.9 333.7 L 448.3 333.7 L 460.8 333.2 L 473.2 334.2 L 485.6 336.2 L 498.0 339.3 L 510.5 340.8 L 522.9 341.3 L 535.3 340.8 L 547.7 341.3 L 560.2 343.9 L 572.6 342.3 L 585.0 341.8 L 597.4 341.3 L 609.9 341.3 L 622.3 341.8 L 634.7 341.3 L 647.1 340.8 L 659.6 340.8 L 672.0 339.8" fill="none" stroke="#d66a37" stroke-width="3"/>
+<path d="M 88.0 297.3 L 100.4 298.9 L 112.9 299.7 L 125.3 301.8 L 137.7 301.6 L 150.1 303.5 L 162.6 305.9 L 175.0 306.9 L 187.4 309.3 L 199.8 303.6 L 212.3 296.9 L 224.7 293.1 L 237.1 287.9 L 249.5 285.1 L 262.0 284.3 L 274.4 284.3 L 286.8 282.6 L 299.2 284.7 L 311.7 287.9 L 324.1 292.4 L 336.5 296.0 L 348.9 298.4 L 361.4 302.6 L 373.8 303.8 L 386.2 308.4 L 398.6 309.1 L 411.1 311.1 L 423.5 312.0 L 435.9 312.9 L 448.3 313.9 L 460.8 314.4 L 473.2 315.4 L 485.6 318.2 L 498.0 315.2 L 510.5 312.9 L 522.9 311.9 L 535.3 308.8 L 547.7 307.5 L 560.2 306.9 L 572.6 305.6 L 585.0 305.8 L 597.4 306.5 L 609.9 308.5 L 622.3 310.4 L 634.7 312.4 L 647.1 315.1 L 659.6 316.8 L 672.0 318.6" fill="none" stroke="#34699a" stroke-width="3"/>
+<text x="88" y="270" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">26.5 C</text>
+<text x="88" y="442" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">-10.9 C</text>
+<circle cx="94" cy="502" r="6" fill="#d66a37"/>
+<text x="108" y="507" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">actual hourly temperature</text>
+<circle cx="376" cy="502" r="6" fill="#34699a"/>
+<text x="390" y="507" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">predicted hourly temperature</text>
+<rect x="720" y="160" width="640" height="360" rx="22" fill="#fffdf8" stroke="#d9d2c7" stroke-width="2"/>
+<text x="1040.0" y="198" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#1d2832">2025-11-24</text>
+<text x="1040.0" y="228" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#5f6871">Actual daily mean jump +5.80 C, predicted +1.61 C</text>
+<line x1="748" y1="448" x2="1332" y2="448" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="748" y1="258" x2="748" y2="448" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="748.0" y1="258" x2="748.0" y2="448" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="750.0" y="472" text-anchor="start" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D-1 00</text>
+<line x1="1040.0" y1="258" x2="1040.0" y2="448" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="1040.0" y="472" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D 00</text>
+<line x1="1332.0" y1="258" x2="1332.0" y2="448" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="1330.0" y="472" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D+1 00</text>
+<path d="M 748.0 431.7 L 760.4 433.8 L 772.9 437.8 L 785.3 437.8 L 797.7 436.3 L 810.1 435.8 L 822.6 436.3 L 835.0 440.4 L 847.4 439.9 L 859.8 431.7 L 872.3 420.1 L 884.7 408.9 L 897.1 398.7 L 909.5 398.2 L 922.0 394.1 L 934.4 394.7 L 946.8 401.8 L 959.2 408.9 L 971.7 403.3 L 984.1 405.3 L 996.5 401.8 L 1008.9 400.2 L 1021.4 398.2 L 1033.8 395.7 L 1046.2 395.7 L 1058.6 398.7 L 1071.1 394.1 L 1083.5 391.1 L 1095.9 389.6 L 1108.3 387.5 L 1120.8 386.5 L 1133.2 388.1 L 1145.6 387.5 L 1158.0 386.0 L 1170.5 383.5 L 1182.9 382.0 L 1195.3 379.9 L 1207.7 379.9 L 1220.2 378.9 L 1232.6 381.4 L 1245.0 385.0 L 1257.4 389.1 L 1269.9 391.1 L 1282.3 382.5 L 1294.7 384.5 L 1307.1 386.0 L 1319.6 388.1 L 1332.0 388.1" fill="none" stroke="#d66a37" stroke-width="3"/>
+<path d="M 748.0 414.4 L 760.4 415.4 L 772.9 415.9 L 785.3 416.2 L 797.7 416.9 L 810.1 417.1 L 822.6 416.3 L 835.0 414.8 L 847.4 413.4 L 859.8 410.1 L 872.3 404.7 L 884.7 399.0 L 897.1 392.0 L 909.5 386.4 L 922.0 386.5 L 934.4 383.4 L 946.8 384.3 L 959.2 386.3 L 971.7 388.0 L 984.1 391.7 L 996.5 394.4 L 1008.9 399.5 L 1021.4 401.7 L 1033.8 402.2 L 1046.2 402.1 L 1058.6 400.9 L 1071.1 401.6 L 1083.5 400.9 L 1095.9 400.6 L 1108.3 399.8 L 1120.8 398.9 L 1133.2 399.5 L 1145.6 397.7 L 1158.0 395.8 L 1170.5 395.4 L 1182.9 392.2 L 1195.3 388.7 L 1207.7 385.8 L 1220.2 385.0 L 1232.6 384.2 L 1245.0 383.7 L 1257.4 387.0 L 1269.9 388.9 L 1282.3 389.5 L 1294.7 391.2 L 1307.1 394.4 L 1319.6 394.4 L 1332.0 395.6" fill="none" stroke="#34699a" stroke-width="3"/>
+<text x="748" y="270" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">26.5 C</text>
+<text x="748" y="442" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">-10.9 C</text>
+<circle cx="754" cy="502" r="6" fill="#d66a37"/>
+<text x="768" y="507" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">actual hourly temperature</text>
+<circle cx="1036" cy="502" r="6" fill="#34699a"/>
+<text x="1050" y="507" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">predicted hourly temperature</text>
+<rect x="60" y="560" width="640" height="360" rx="22" fill="#fffdf8" stroke="#d9d2c7" stroke-width="2"/>
+<text x="380.0" y="598" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#1d2832">2026-01-13</text>
+<text x="380.0" y="628" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#5f6871">Actual daily mean jump +5.45 C, predicted -0.46 C</text>
+<line x1="88" y1="848" x2="672" y2="848" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="88" y1="658" x2="88" y2="848" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="88.0" y1="658" x2="88.0" y2="848" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="90.0" y="872" text-anchor="start" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D-1 00</text>
+<line x1="380.0" y1="658" x2="380.0" y2="848" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="380.0" y="872" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D 00</text>
+<line x1="672.0" y1="658" x2="672.0" y2="848" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="670.0" y="872" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D+1 00</text>
+<path d="M 88.0 817.5 L 94.1 817.5 L 100.3 829.2 L 106.4 829.2 L 112.6 829.7 L 118.7 829.7 L 124.9 829.2 L 131.0 829.2 L 137.2 828.2 L 143.3 828.2 L 149.5 827.2 L 155.6 827.2 L 161.8 824.1 L 167.9 824.1 L 174.1 817.0 L 180.2 817.0 L 186.4 811.9 L 192.5 811.9 L 198.7 809.4 L 204.8 809.4 L 210.9 806.9 L 217.1 806.9 L 223.2 802.3 L 229.4 802.3 L 235.5 795.7 L 241.7 795.7 L 247.8 795.7 L 254.0 795.7 L 260.1 793.1 L 266.3 793.1 L 272.4 793.1 L 278.6 793.1 L 284.7 791.6 L 290.9 791.6 L 297.0 791.6 L 303.2 791.6 L 309.3 789.1 L 315.5 789.1 L 321.6 790.6 L 327.7 790.6 L 333.9 789.6 L 340.0 789.6 L 346.2 787.0 L 352.3 787.0 L 358.5 784.5 L 364.6 784.5 L 370.8 782.5 L 376.9 782.5 L 383.1 779.9 L 389.2 779.9 L 395.4 779.9 L 401.5 779.9 L 407.7 779.9 L 413.8 779.9 L 420.0 779.4 L 426.1 779.4 L 432.3 777.4 L 438.4 777.4 L 444.5 780.9 L 450.7 780.9 L 456.8 778.9 L 463.0 778.9 L 469.1 779.9 L 475.3 779.9 L 481.4 784.5 L 487.6 784.5 L 493.7 781.4 L 499.9 781.4 L 506.0 775.9 L 512.2 775.9 L 518.3 774.8 L 524.5 774.8 L 530.6 775.4 L 536.8 775.4 L 542.9 763.2 L 549.1 763.2 L 555.2 760.6 L 561.3 760.6 L 567.5 763.2 L 573.6 763.2 L 579.8 767.7 L 585.9 767.7 L 592.1 772.3 L 598.2 772.3 L 604.4 778.9 L 610.5 778.9 L 616.7 779.9 L 622.8 779.9 L 629.0 782.0 L 635.1 782.0 L 641.3 784.5 L 647.4 784.5 L 653.6 785.5 L 659.7 785.5 L 665.9 785.5 L 672.0 785.5" fill="none" stroke="#d66a37" stroke-width="3"/>
+<path d="M 88.0 808.8 L 94.1 801.8 L 100.3 800.9 L 106.4 809.1 L 112.6 803.1 L 118.7 809.1 L 124.9 811.7 L 131.0 808.1 L 137.2 805.5 L 143.3 811.7 L 149.5 805.0 L 155.6 809.2 L 161.8 810.1 L 167.9 807.0 L 174.1 801.2 L 180.2 810.3 L 186.4 805.7 L 192.5 814.2 L 198.7 804.5 L 204.8 810.9 L 210.9 802.8 L 217.1 808.6 L 223.2 795.8 L 229.4 810.0 L 235.5 795.6 L 241.7 809.1 L 247.8 808.8 L 254.0 789.7 L 260.1 806.8 L 266.3 795.5 L 272.4 784.1 L 278.6 806.1 L 284.7 791.9 L 290.9 805.1 L 297.0 789.6 L 303.2 806.9 L 309.3 797.3 L 315.5 807.9 L 321.6 810.2 L 327.7 793.7 L 333.9 810.8 L 340.0 793.9 L 346.2 801.7 L 352.3 813.9 L 358.5 813.3 L 364.6 798.9 L 370.8 797.5 L 376.9 812.8 L 383.1 804.3 L 389.2 815.3 L 395.4 807.3 L 401.5 813.6 L 407.7 808.6 L 413.8 812.8 L 420.0 805.8 L 426.1 814.0 L 432.3 804.3 L 438.4 815.6 L 444.5 815.4 L 450.7 804.8 L 456.8 813.9 L 463.0 812.0 L 469.1 814.8 L 475.3 803.9 L 481.4 806.9 L 487.6 813.2 L 493.7 804.9 L 499.9 814.5 L 506.0 812.2 L 512.2 807.1 L 518.3 799.0 L 524.5 810.9 L 530.6 798.0 L 536.8 809.9 L 542.9 792.5 L 549.1 810.0 L 555.2 786.5 L 561.3 809.3 L 567.5 790.5 L 573.6 806.6 L 579.8 789.1 L 585.9 807.5 L 592.1 791.8 L 598.2 807.1 L 604.4 810.0 L 610.5 796.3 L 616.7 798.8 L 622.8 807.8 L 629.0 797.1 L 635.1 812.0 L 641.3 807.0 L 647.4 815.1 L 653.6 808.0 L 659.7 811.7 L 665.9 815.3 L 672.0 806.1" fill="none" stroke="#34699a" stroke-width="3"/>
+<text x="88" y="670" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">26.5 C</text>
+<text x="88" y="842" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">-10.9 C</text>
+<circle cx="94" cy="902" r="6" fill="#d66a37"/>
+<text x="108" y="907" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">actual hourly temperature</text>
+<circle cx="376" cy="902" r="6" fill="#34699a"/>
+<text x="390" y="907" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">predicted hourly temperature</text>
+<rect x="720" y="560" width="640" height="360" rx="22" fill="#fffdf8" stroke="#d9d2c7" stroke-width="2"/>
+<text x="1040.0" y="598" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#1d2832">2025-12-08</text>
+<text x="1040.0" y="628" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#5f6871">Actual daily mean jump +5.00 C, predicted +1.84 C</text>
+<line x1="748" y1="848" x2="1332" y2="848" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="748" y1="658" x2="748" y2="848" stroke="#c8c1b5" stroke-width="1.5"/>
+<line x1="748.0" y1="658" x2="748.0" y2="848" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="750.0" y="872" text-anchor="start" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D-1 00</text>
+<line x1="1040.0" y1="658" x2="1040.0" y2="848" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="1040.0" y="872" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D 00</text>
+<line x1="1332.0" y1="658" x2="1332.0" y2="848" stroke="#ebe4d8" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="1330.0" y="872" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">D+1 00</text>
+<path d="M 748.0 771.3 L 760.4 765.7 L 772.9 766.7 L 785.3 766.2 L 797.7 769.3 L 810.1 768.2 L 822.6 768.2 L 835.0 763.2 L 847.4 764.7 L 859.8 763.2 L 872.3 758.1 L 884.7 757.6 L 897.1 757.6 L 909.5 755.0 L 922.0 752.5 L 934.4 751.5 L 946.8 754.5 L 959.2 755.5 L 971.7 753.5 L 984.1 751.5 L 996.5 752.5 L 1008.9 753.0 L 1021.4 753.0 L 1033.8 753.0 L 1046.2 752.5 L 1058.6 752.0 L 1071.1 746.4 L 1083.5 736.7 L 1095.9 734.7 L 1108.3 734.7 L 1120.8 733.7 L 1133.2 733.7 L 1145.6 735.7 L 1158.0 734.2 L 1170.5 729.6 L 1182.9 727.1 L 1195.3 723.5 L 1207.7 726.1 L 1220.2 724.6 L 1232.6 723.5 L 1245.0 726.1 L 1257.4 728.6 L 1269.9 731.7 L 1282.3 736.2 L 1294.7 736.7 L 1307.1 736.2 L 1319.6 736.2 L 1332.0 734.7" fill="none" stroke="#d66a37" stroke-width="3"/>
+<path d="M 748.0 771.9 L 760.4 772.6 L 772.9 773.6 L 785.3 774.9 L 797.7 775.5 L 810.1 776.2 L 822.6 777.1 L 835.0 777.3 L 847.4 778.4 L 859.8 777.1 L 872.3 776.3 L 884.7 774.8 L 897.1 773.4 L 909.5 771.9 L 922.0 771.4 L 934.4 771.0 L 946.8 771.4 L 959.2 772.7 L 971.7 774.4 L 984.1 775.7 L 996.5 777.1 L 1008.9 778.3 L 1021.4 779.5 L 1033.8 780.8 L 1046.2 760.2 L 1058.6 761.1 L 1071.1 762.8 L 1083.5 764.2 L 1095.9 765.4 L 1108.3 765.7 L 1120.8 767.5 L 1133.2 767.7 L 1145.6 769.6 L 1158.0 767.9 L 1170.5 766.6 L 1182.9 765.1 L 1195.3 763.1 L 1207.7 762.1 L 1220.2 762.0 L 1232.6 761.4 L 1245.0 762.2 L 1257.4 763.9 L 1269.9 766.3 L 1282.3 767.4 L 1294.7 769.5 L 1307.1 770.0 L 1319.6 773.0 L 1332.0 773.6" fill="none" stroke="#34699a" stroke-width="3"/>
+<text x="748" y="670" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">26.5 C</text>
+<text x="748" y="842" font-family="Arial, sans-serif" font-size="12" fill="#6d665d">-10.9 C</text>
+<circle cx="754" cy="902" r="6" fill="#d66a37"/>
+<text x="768" y="907" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">actual hourly temperature</text>
+<circle cx="1036" cy="902" r="6" fill="#34699a"/>
+<text x="1050" y="907" font-family="Arial, sans-serif" font-size="13" fill="#4c555d">predicted hourly temperature</text>
+<rect x="60" y="955" width="1300" height="220" rx="18" fill="#ffffff" stroke="#ddd6ca" stroke-width="2"/>
+<text x="84" y="989" font-family="Georgia, serif" font-size="22" fill="#1d2832">Top transition days by absolute daily mean change</text>
+<text x="84" y="1021" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#55606a">Date</text>
+<text x="260" y="1021" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#55606a">Actual delta</text>
+<text x="430" y="1021" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#55606a">Pred delta</text>
+<text x="570" y="1021" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#55606a">Gap</text>
+<text x="700" y="1021" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#55606a">Actual mean</text>
+<text x="870" y="1021" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#55606a">Pred mean</text>
+<text x="84" y="1047" font-family="Arial, sans-serif" font-size="13" fill="#24303a">2025-09-22</text>
+<text x="260" y="1047" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-7.82 C</text>
+<text x="430" y="1047" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-3.03 C</text>
+<text x="570" y="1047" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+4.78 C</text>
+<text x="700" y="1047" font-family="Arial, sans-serif" font-size="13" fill="#24303a">10.83 C</text>
+<text x="870" y="1047" font-family="Arial, sans-serif" font-size="13" fill="#24303a">15.95 C</text>
+<text x="84" y="1069" font-family="Arial, sans-serif" font-size="13" fill="#24303a">2025-11-24</text>
+<text x="260" y="1069" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+5.80 C</text>
+<text x="430" y="1069" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+1.61 C</text>
+<text x="570" y="1069" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-4.18 C</text>
+<text x="700" y="1069" font-family="Arial, sans-serif" font-size="13" fill="#24303a">1.13 C</text>
+<text x="870" y="1069" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-0.25 C</text>
+<text x="84" y="1091" font-family="Arial, sans-serif" font-size="13" fill="#24303a">2026-01-13</text>
+<text x="260" y="1091" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+5.45 C</text>
+<text x="430" y="1091" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-0.46 C</text>
+<text x="570" y="1091" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-5.92 C</text>
+<text x="700" y="1091" font-family="Arial, sans-serif" font-size="13" fill="#24303a">3.05 C</text>
+<text x="870" y="1091" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-2.76 C</text>
+<text x="84" y="1113" font-family="Arial, sans-serif" font-size="13" fill="#24303a">2025-12-08</text>
+<text x="260" y="1113" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+5.00 C</text>
+<text x="430" y="1113" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+1.84 C</text>
+<text x="570" y="1113" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-3.16 C</text>
+<text x="700" y="1113" font-family="Arial, sans-serif" font-size="13" fill="#24303a">11.55 C</text>
+<text x="870" y="1113" font-family="Arial, sans-serif" font-size="13" fill="#24303a">5.29 C</text>
+<text x="84" y="1135" font-family="Arial, sans-serif" font-size="13" fill="#24303a">2026-02-06</text>
+<text x="260" y="1135" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+4.96 C</text>
+<text x="430" y="1135" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+3.06 C</text>
+<text x="570" y="1135" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-1.91 C</text>
+<text x="700" y="1135" font-family="Arial, sans-serif" font-size="13" fill="#24303a">0.58 C</text>
+<text x="870" y="1135" font-family="Arial, sans-serif" font-size="13" fill="#24303a">3.14 C</text>
+<text x="84" y="1157" font-family="Arial, sans-serif" font-size="13" fill="#24303a">2026-01-11</text>
+<text x="260" y="1157" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-4.61 C</text>
+<text x="430" y="1157" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+0.59 C</text>
+<text x="570" y="1157" font-family="Arial, sans-serif" font-size="13" fill="#24303a">+5.20 C</text>
+<text x="700" y="1157" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-7.00 C</text>
+<text x="870" y="1157" font-family="Arial, sans-serif" font-size="13" fill="#24303a">-0.84 C</text>
+</svg>

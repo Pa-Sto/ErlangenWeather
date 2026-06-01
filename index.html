@@ -82,6 +82,7 @@
 
   <script>
     const RAIN_MIN = 0.05; // mm/h threshold below which we treat rain as zero
+    const DATA_ROOT = 'site/data/current';
     const NF1 = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
     async function loadJSON(url) {
@@ -267,14 +268,14 @@
         let multi, point, info, metrics;
         try {
           [multi, point, info, metrics] = await Promise.all([
-          loadJSON('prediction_multi.json'),
-          loadJSON('prediction_point.json'),
-          loadJSON('model_info.json').catch(()=>null),
-          loadJSON('metrics.json').catch(()=>null),
+          loadJSON(`${DATA_ROOT}/prediction_multi.json`),
+          loadJSON(`${DATA_ROOT}/prediction_point.json`),
+          loadJSON(`${DATA_ROOT}/model_info.json`).catch(()=>null),
+          loadJSON(`${DATA_ROOT}/metrics.json`).catch(()=>null),
 ]);
         } catch (e) {
           console.warn('prediction_multi.json missing, falling back to prediction.json', e);
-          const pred = await loadJSON('prediction.json');
+          const pred = await loadJSON(`${DATA_ROOT}/prediction.json`);
           // Convert temp-only format to multi-like structure (temp, zero rain/cloud)
           multi = {};
           for (const [ts, obj] of Object.entries(pred)) {
@@ -284,9 +285,9 @@
             multi[ts] = { temp_c: temp, rain_mm: 0, cloudcover_pct: 0 };
           }
           [point, info, metrics] = await Promise.all([
-            loadJSON('prediction_point.json'),
-            loadJSON('model_info.json').catch(()=>null),
-            loadJSON('metrics.json').catch(()=>null),
+            loadJSON(`${DATA_ROOT}/prediction_point.json`),
+            loadJSON(`${DATA_ROOT}/model_info.json`).catch(()=>null),
+            loadJSON(`${DATA_ROOT}/metrics.json`).catch(()=>null),
           ]);
         }
 

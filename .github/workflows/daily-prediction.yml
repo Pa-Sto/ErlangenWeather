@@ -34,13 +34,13 @@ jobs:
 
       - name: Run prediction (no training)
         run: |
-          python WeatherData.py --predict-only --source forecast --past-days 20 --forecast-days 3 --extend-to-present --cache-file historical_data.csv --lat 49.59 --lon 11.00
+          python WeatherData.py --predict-only --source forecast --past-days 20 --forecast-days 3 --extend-to-present --cache-file historical_data.csv --lat 49.59 --lon 11.00 --site-current-dir site/data/current --site-history-dir site/data/history --model-path model
 
       - name: Commit & push if changed
         run: |
           git config user.name "github-actions"
           git config user.email "actions@users.noreply.github.com"
-          git add prediction.json prediction_multi.json history_predictions_multi.json prediction_point.json history_predictions.json historical_data.csv metrics.json model_info.json model_log.txt MODEL_LOG.md || true
+          git add site/data/current site/data/history historical_data.csv model_log.txt MODEL_LOG.md || true
           if ! git diff --cached --quiet; then
             git commit -m "Daily prediction update [skip ci]"
             git push
