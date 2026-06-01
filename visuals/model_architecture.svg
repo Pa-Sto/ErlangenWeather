@@ -1,44 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="460" viewBox="0 0 1180 460">
-  <rect width="1180" height="460" fill="#fbf9f4"/>
-  <text x="50" y="60" font-family="Georgia, serif" font-size="30" fill="#1c2731">Model Architecture</text>
-  <text x="50" y="90" font-family="Arial, sans-serif" font-size="16" fill="#5d6771">Current training path in WeatherData.py</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="470" viewBox="0 0 1180 470">
+  <rect width="1180" height="470" fill="#fbf9f4"/>
+  <text x="50" y="58" font-family="Georgia, serif" font-size="30" fill="#1c2731">Deployed Model Architecture</text>
+  <text x="50" y="88" font-family="Arial, sans-serif" font-size="16" fill="#5d6771">SavedModel in model/ with input signature 240 hours x 28 features</text>
 
-  <rect x="50" y="150" width="150" height="90" rx="18" fill="#1f5f8b"/>
-  <text x="125" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">Input window</text>
-  <text x="125" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#d8eef9">240 x 132</text>
+  <rect x="50" y="145" width="155" height="92" rx="14" fill="#1f5f8b"/>
+  <text x="127.5" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">Input window</text>
+  <text x="127.5" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#d8eef9">240 x 28</text>
 
-  <rect x="255" y="150" width="170" height="90" rx="18" fill="#3f7d58"/>
-  <text x="340" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">Patch Conv1D</text>
-  <text x="340" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#e3f6ea">k=4, s=2</text>
+  <rect x="255" y="145" width="170" height="92" rx="14" fill="#3f7d58"/>
+  <text x="340" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">Patch Conv1D</text>
+  <text x="340" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#e3f6ea">kernel 4, stride 2</text>
 
-  <rect x="480" y="150" width="170" height="90" rx="18" fill="#8b6f47"/>
-  <text x="565" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">Token sequence</text>
-  <text x="565" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#fff3df">119 x 128</text>
+  <rect x="475" y="145" width="170" height="92" rx="14" fill="#8b6f47"/>
+  <text x="560" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">Token sequence</text>
+  <text x="560" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#fff3df">119 x 128</text>
 
-  <rect x="705" y="120" width="220" height="150" rx="18" fill="#593b76"/>
-  <text x="815" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#fff">4 Transformer blocks</text>
-  <text x="815" y="192" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#efe3fb">MHA: 4 heads</text>
-  <text x="815" y="216" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#efe3fb">d_model: 128</text>
-  <text x="815" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#efe3fb">FFN: 256</text>
-  <text x="815" y="264" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#efe3fb">dropout: 0.1</text>
+  <rect x="695" y="116" width="225" height="150" rx="14" fill="#334d63"/>
+  <text x="807.5" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#fff">Transformer encoder</text>
+  <text x="807.5" y="186" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#dfeaf2">4 blocks, 4 heads</text>
+  <text x="807.5" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#dfeaf2">d_model 128</text>
+  <text x="807.5" y="234" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#dfeaf2">FFN 256, dropout 0.1</text>
 
-  <rect x="970" y="150" width="170" height="90" rx="18" fill="#b24c3d"/>
-  <text x="1055" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">GAP + Head</text>
-  <text x="1055" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#ffe6e2">72 x 3</text>
+  <rect x="970" y="145" width="170" height="92" rx="14" fill="#b24c3d"/>
+  <text x="1055" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#fff">GAP + Head</text>
+  <text x="1055" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#ffe6e2">72 x 3</text>
 
-  <line x1="200" y1="195" x2="255" y2="195" stroke="#7d8a96" stroke-width="4"/>
-  <polygon points="255,195 242,188 242,202" fill="#7d8a96"/>
-  <line x1="425" y1="195" x2="480" y2="195" stroke="#7d8a96" stroke-width="4"/>
-  <polygon points="480,195 467,188 467,202" fill="#7d8a96"/>
-  <line x1="650" y1="195" x2="705" y2="195" stroke="#7d8a96" stroke-width="4"/>
-  <polygon points="705,195 692,188 692,202" fill="#7d8a96"/>
-  <line x1="925" y1="195" x2="970" y2="195" stroke="#7d8a96" stroke-width="4"/>
-  <polygon points="970,195 957,188 957,202" fill="#7d8a96"/>
+  <line x1="205" y1="191" x2="255" y2="191" stroke="#7d8a96" stroke-width="4"/>
+  <polygon points="255,191 242,184 242,198" fill="#7d8a96"/>
+  <line x1="425" y1="191" x2="475" y2="191" stroke="#7d8a96" stroke-width="4"/>
+  <polygon points="475,191 462,184 462,198" fill="#7d8a96"/>
+  <line x1="645" y1="191" x2="695" y2="191" stroke="#7d8a96" stroke-width="4"/>
+  <polygon points="695,191 682,184 682,198" fill="#7d8a96"/>
+  <line x1="920" y1="191" x2="970" y2="191" stroke="#7d8a96" stroke-width="4"/>
+  <polygon points="970,191 957,184 957,198" fill="#7d8a96"/>
 
-  <rect x="70" y="305" width="1040" height="110" rx="20" fill="#ffffff" stroke="#ddd4c7" stroke-width="2"/>
-  <text x="95" y="340" font-family="Georgia, serif" font-size="22" fill="#1c2731">Training objective</text>
-  <text x="95" y="372" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">Loss: weighted Huber over time and channels</text>
-  <text x="470" y="372" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">Optimizer: Adam, lr=3e-4, clipnorm=1.0</text>
-  <text x="95" y="398" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">Targets: temperature_2m, rain, cloudcover</text>
-  <text x="470" y="398" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">Output head: Dense 216 -> Reshape 72 x 3</text>
+  <rect x="70" y="305" width="1040" height="112" rx="16" fill="#ffffff" stroke="#ddd4c7" stroke-width="2"/>
+  <text x="95" y="340" font-family="Georgia, serif" font-size="22" fill="#1c2731">Feature and objective summary</text>
+  <text x="95" y="372" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">28 features = 9 weather variables + 13 time features + 6 derived physical features</text>
+  <text x="95" y="398" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">Targets: temperature_2m, rain, cloudcover across 72 hourly lead times</text>
+  <text x="650" y="398" font-family="Arial, sans-serif" font-size="16" fill="#4d5a66">Loss: weighted multi-target MSE</text>
 </svg>

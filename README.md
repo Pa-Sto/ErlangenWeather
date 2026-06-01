@@ -1,51 +1,54 @@
-# ErlangenWeather — Local Deep-Learning Weather Forecasts
+# ErlangenWeather
 
-Hourly 3-day forecasts for Erlangen (49.59, 11.00) with a custom Transformer model.
-Deployed daily via GitHub Actions and visualized on GitHub Pages.
+Hourly 3-day weather forecasts for Erlangen, Germany (`49.59`, `11.00`) using a local Transformer model.
 
-- **Live site:** (GitHub Pages for this repo)
-- **Model evolution & design notes:** [MODEL_LOG.md](MODEL_LOG.md)
+- **Website:** [pa-sto.github.io/ErlangenWeather](https://pa-sto.github.io/ErlangenWeather/)
+- **Model, data, features, architecture, and metrics:** [MODEL_LOG.md](MODEL_LOG.md)
 
----
+## Repository Layout
 
-## What’s in here?
+| Path | Purpose |
+|---|---|
+| `WeatherData.py` | Data fetching, preprocessing, training, prediction, metrics, and output writing |
+| `evaluation.py` | Evaluates published prediction history against archive actuals |
+| `index.html` | GitHub Pages UI |
+| `model/` | Deployed SavedModel used by GitHub Actions |
+| `historical_data.csv` | Archive cache for actual weather data |
+| `site/data/current/` | Current published forecast, metrics, and model metadata |
+| `site/data/history/` | Published prediction history from GitHub Actions |
+| `visuals/` | Public diagrams used by the model documentation |
 
-- **`WeatherData.py`** — data fetch/cache, feature engineering, training, prediction, metrics.
-- **`evaluation.py`** — evaluates the published prediction history against archive actuals.
-- **`index.html`** — lightweight site that reads the JSON outputs.
-- **`model/`** — saved model used by the action (commit your trained weights here).
-- **Published site data** — `site/data/current/` for current forecast files and `site/data/history/` for GitHub Actions history.
-- **Local runs** — `runs/local/<timestamp>/` keeps experiments separate from published predictions.
-- **CI** — `.github/workflows/daily-prediction.yml` runs daily to refresh predictions.
+Local experiments write to `runs/local/<timestamp>/` by default, so they do not overwrite the published GitHub Actions record.
 
----
+## Quickstart
 
-## Current public model (V0.1)
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-- **Horizon:** 72 h (3 days, hourly)
-- **Targets:** Temperature (°C), Rain (mm/h), Cloud cover (%)
-- **Input window:** 10 days (240 h) context
-- **Architecture:** Transformer encoder with 1-D patching (Conv1D k=4, s=2), d_model=128, heads=4, layers=4, FFN=256, dropout=0.1  
-- **Metrics shown on site:** RMSE (Temp/Rain/Cloud) with a 5-day lag (archive availability)
+Run a local prediction without touching published site data:
 
-More details: [MODEL_LOG.md](MODEL_LOG.md)
+```bash
+.venv/bin/python WeatherData.py \
+  --predict-only \
+  --source forecast \
+  --past-days 20 \
+  --forecast-days 3 \
+  --extend-to-present \
+  --cache-file historical_data.csv \
+  --lat 49.59 \
+  --lon 11.00 \
+  --model-path model
+```
 
----
-
-## Evaluate Published History
+Evaluate the published history:
 
 ```bash
 .venv/bin/python evaluation.py --cache historical_data.csv --min-lag-days 5
 ```
 
-By default this reads `site/data/history/history_predictions.json` and
-`site/data/history/history_predictions_multi.json`, so local experiments do not
-overwrite the GitHub Actions record.
+## Daily Automation
 
----
-
-## Quickstart (local)
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-pip install -r requirements.txt
+The GitHub Action in `.github/workflows/daily-prediction.yml` runs the prediction path once per day and commits changes under `site/data/current/` and `site/data/history/`.

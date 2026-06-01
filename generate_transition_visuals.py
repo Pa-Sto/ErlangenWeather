@@ -4,7 +4,6 @@ Generate a visual briefing for large day-to-day temperature transitions.
 
 Outputs:
 - visuals/temperature_transition_cases.svg
-- TEMPERATURE_TRANSITIONS.md
 """
 
 import json
@@ -17,7 +16,6 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent
 VIS_DIR = ROOT / "visuals"
 SVG_PATH = VIS_DIR / "temperature_transition_cases.svg"
-MD_PATH = ROOT / "TEMPERATURE_TRANSITIONS.md"
 PREDICTION_HISTORY_PATH = ROOT / "site" / "data" / "history" / "history_predictions.json"
 
 
@@ -214,49 +212,6 @@ def render_svg(cases, daily_top):
     SVG_PATH.write_text("\n".join(parts), encoding="utf-8")
 
 
-def render_markdown(cases, daily_top):
-    lines = [
-        "# Temperature Transition Brief",
-        "",
-        "This note focuses on the days where Erlangen's daily mean temperature changed the most inside the scored prediction history.",
-        "",
-        f"![Temperature transition cases](visuals/{SVG_PATH.name})",
-        "",
-        "## Reading guide",
-        "",
-        "- Orange line: actual hourly temperature from `historical_data.csv`.",
-        "- Blue line: model prediction from `site/data/history/history_predictions.json`.",
-        "- Strong underreaction means the model is acting too much like persistence.",
-        "",
-        "## Strongest transition days",
-        "",
-        "| Date | Actual delta (C) | Pred delta (C) | Gap (C) | Comment |",
-        "|---|---:|---:|---:|---|",
-    ]
-
-    for _, row in daily_top.iterrows():
-        comment = "underreacted" if abs(row["pred_delta"]) < abs(row["actual_delta"]) else "matched or overshot"
-        lines.append(
-            f"| {pd.Timestamp(row['date']).strftime('%Y-%m-%d')} | {row['actual_delta']:+.2f} | {row['pred_delta']:+.2f} | {row['delta_gap']:+.2f} | {comment} |"
-        )
-
-    lines.extend(
-        [
-            "",
-            "## Main takeaway",
-            "",
-            "The current model usually gets the direction of major moves, but it compresses the amplitude. That is consistent with the conservative behavior already seen in the aggregate metrics.",
-            "",
-            "## What to test next",
-            "",
-            "1. Train on a more recent history window and compare these same transition days.",
-            "2. Add temperature transition weighting so large day-to-day changes matter more during training.",
-            "3. Score a dedicated jump-day benchmark alongside normal RMSE for every new experiment.",
-        ]
-    )
-    MD_PATH.write_text("\n".join(lines), encoding="utf-8")
-
-
 def main():
     merged, daily = build_transition_dataset()
     cases = compute_cases(merged, daily, top_n=4)
@@ -264,9 +219,7 @@ def main():
         raise SystemExit("No usable transition cases found.")
     daily_top = daily.head(6).copy()
     render_svg(cases, daily_top)
-    render_markdown(cases, daily_top)
     print(f"Wrote {SVG_PATH.relative_to(ROOT)}")
-    print(f"Wrote {MD_PATH.name}")
 
 
 if __name__ == "__main__":
