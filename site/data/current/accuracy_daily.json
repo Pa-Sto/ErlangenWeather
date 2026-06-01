@@ -390,5 +390,545 @@
   {
     "date": "2026-01-06",
     "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-14",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-15",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-16",
+    "accuracy_percent": 23.213694555292008
+  },
+  {
+    "date": "2026-01-17",
+    "accuracy_percent": 21.366060766600558
+  },
+  {
+    "date": "2026-01-18",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-19",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-20",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-21",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-22",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-23",
+    "accuracy_percent": 15.43491876568276
+  },
+  {
+    "date": "2026-01-24",
+    "accuracy_percent": 25.468011756323495
+  },
+  {
+    "date": "2026-01-25",
+    "accuracy_percent": 71.87571624292318
+  },
+  {
+    "date": "2026-01-26",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-27",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-28",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-29",
+    "accuracy_percent": 7.343621352971985
+  },
+  {
+    "date": "2026-01-30",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-01-31",
+    "accuracy_percent": 11.047366055452324
+  },
+  {
+    "date": "2026-02-01",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-02",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-03",
+    "accuracy_percent": 44.21263621267656
+  },
+  {
+    "date": "2026-02-04",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-05",
+    "accuracy_percent": 47.14312329294622
+  },
+  {
+    "date": "2026-02-06",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-07",
+    "accuracy_percent": 23.164776428024446
+  },
+  {
+    "date": "2026-02-08",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-09",
+    "accuracy_percent": 12.77405129215895
+  },
+  {
+    "date": "2026-02-10",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-11",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-12",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-13",
+    "accuracy_percent": 0.5880318996972611
+  },
+  {
+    "date": "2026-02-14",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-15",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-16",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-17",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-18",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-19",
+    "accuracy_percent": 38.78350562160088
+  },
+  {
+    "date": "2026-02-20",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-21",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-22",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-23",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-24",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-25",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-26",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-27",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-02-28",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-01",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-02",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-03",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-04",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-05",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-06",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-07",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-08",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-09",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-10",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-11",
+    "accuracy_percent": 25.7979328384475
+  },
+  {
+    "date": "2026-03-12",
+    "accuracy_percent": 42.66795563312081
+  },
+  {
+    "date": "2026-03-13",
+    "accuracy_percent": 20.80089231061152
+  },
+  {
+    "date": "2026-03-14",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-15",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-16",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-17",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-18",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-19",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-20",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-21",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-22",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-23",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-24",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-25",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-26",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-27",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-28",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-29",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-30",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-03-31",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-01",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-02",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-03",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-04",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-05",
+    "accuracy_percent": 25.5962423892622
+  },
+  {
+    "date": "2026-04-06",
+    "accuracy_percent": 24.444264841104292
+  },
+  {
+    "date": "2026-04-07",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-08",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-09",
+    "accuracy_percent": 6.721205167752798
+  },
+  {
+    "date": "2026-04-10",
+    "accuracy_percent": 52.200307238832856
+  },
+  {
+    "date": "2026-04-11",
+    "accuracy_percent": 65.57739499776585
+  },
+  {
+    "date": "2026-04-12",
+    "accuracy_percent": 66.34342560589374
+  },
+  {
+    "date": "2026-04-13",
+    "accuracy_percent": 74.14014741567937
+  },
+  {
+    "date": "2026-04-14",
+    "accuracy_percent": 37.36629976525905
+  },
+  {
+    "date": "2026-04-15",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-16",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-17",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-18",
+    "accuracy_percent": 8.494823617998026
+  },
+  {
+    "date": "2026-04-19",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-20",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-21",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-22",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-23",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-24",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-25",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-26",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-27",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-28",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-29",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-04-30",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-01",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-02",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-03",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-04",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-05",
+    "accuracy_percent": 22.266777624635093
+  },
+  {
+    "date": "2026-05-06",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-07",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-08",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-09",
+    "accuracy_percent": 35.430504538664266
+  },
+  {
+    "date": "2026-05-10",
+    "accuracy_percent": 5.627293772269548
+  },
+  {
+    "date": "2026-05-11",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-12",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-13",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-14",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-15",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-16",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-17",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-18",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-19",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-20",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-21",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-22",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-23",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-24",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-25",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-26",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-27",
+    "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-05-28",
+    "accuracy_percent": 40.34846281156026
   }
 ]
