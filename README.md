@@ -11,9 +11,11 @@ Deployed daily via GitHub Actions and visualized on GitHub Pages.
 ## What’s in here?
 
 - **`WeatherData.py`** — data fetch/cache, feature engineering, training, prediction, metrics.
+- **`evaluation.py`** — evaluates the published prediction history against archive actuals.
 - **`index.html`** — lightweight site that reads the JSON outputs.
 - **`model/`** — saved model used by the action (commit your trained weights here).
-- **Data files** — `historical_data.csv`, `prediction*.json`, `history_predictions*.json`, `metrics.json`, `model_info.json`.
+- **Published site data** — `site/data/current/` for current forecast files and `site/data/history/` for GitHub Actions history.
+- **Local runs** — `runs/local/<timestamp>/` keeps experiments separate from published predictions.
 - **CI** — `.github/workflows/daily-prediction.yml` runs daily to refresh predictions.
 
 ---
@@ -27,6 +29,18 @@ Deployed daily via GitHub Actions and visualized on GitHub Pages.
 - **Metrics shown on site:** RMSE (Temp/Rain/Cloud) with a 5-day lag (archive availability)
 
 More details: [MODEL_LOG.md](MODEL_LOG.md)
+
+---
+
+## Evaluate Published History
+
+```bash
+.venv/bin/python evaluation.py --cache historical_data.csv --min-lag-days 5
+```
+
+By default this reads `site/data/history/history_predictions.json` and
+`site/data/history/history_predictions_multi.json`, so local experiments do not
+overwrite the GitHub Actions record.
 
 ---
 

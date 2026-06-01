@@ -10,8 +10,8 @@ Each experiment must include a baseline comparison and a clear next step.
 ```bash
 .venv/bin/python evaluation.py \
   --cache historical_data.csv \
-  --history history_predictions.json \
-  --history-multi history_predictions_multi.json \
+  --history site/data/history/history_predictions.json \
+  --history-multi site/data/history/history_predictions_multi.json \
   --min-lag-days 5
 ```
 
@@ -50,8 +50,8 @@ Enable multi-location grid inputs in training.
 ```bash
 .venv/bin/python evaluation.py \
   --cache historical_data.csv \
-  --history history_predictions.json \
-  --history-multi history_predictions_multi.json \
+  --history site/data/history/history_predictions.json \
+  --history-multi site/data/history/history_predictions_multi.json \
   --min-lag-days 5
 ```
 

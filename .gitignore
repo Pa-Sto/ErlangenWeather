@@ -1,1 +1,6 @@
 runs/local/
+__pycache__/
+grid_cache/
+model.keras
+model_backup.weights.h5
+predictions/pred_*.json
