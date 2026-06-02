@@ -1,14 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="620" viewBox="0 0 1180 620">
-  <rect width="1180" height="620" fill="#f7f5ef"/>
-  <rect x="40" y="40" width="690" height="540" rx="18" fill="#fffdf8" stroke="#d7d1c7" stroke-width="2"/>
-  <rect x="770" y="40" width="370" height="540" rx="18" fill="#13212f" stroke="#22384d" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="680" viewBox="0 0 1180 680">
+  <rect width="1180" height="680" fill="#f7f5ef"/>
+  <rect x="40" y="40" width="690" height="600" rx="18" fill="#fffdf8" stroke="#d7d1c7" stroke-width="2"/>
+  <rect x="770" y="40" width="370" height="600" rx="18" fill="#13212f" stroke="#22384d" stroke-width="2"/>
 
   <text x="70" y="82" font-family="Georgia, serif" font-size="30" fill="#18222e">Training Data Footprint</text>
   <text x="70" y="114" font-family="Arial, sans-serif" font-size="16" fill="#54606c">Production model: Erlangen base point. Local grid cache: spatial research data.</text>
 
   <line x1="160" y1="500" x2="600" y2="500" stroke="#c3bdb3" stroke-width="2"/>
   <line x1="160" y1="500" x2="160" y2="150" stroke="#c3bdb3" stroke-width="2"/>
-  <text x="614" y="505" font-family="Arial, sans-serif" font-size="14" fill="#6d665d">east</text>
+  <text x="634" y="486" font-family="Arial, sans-serif" font-size="14" fill="#6d665d">east</text>
   <text x="128" y="145" font-family="Arial, sans-serif" font-size="14" fill="#6d665d">north</text>
 
   <line x1="160" y1="230" x2="600" y2="230" stroke="#e3ddd2" stroke-width="1.5" stroke-dasharray="6 6"/>
@@ -28,31 +28,35 @@
   <circle cx="380" cy="230" r="18" fill="#7891a6"/><text x="380" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#fff">L7</text>
   <circle cx="600" cy="230" r="18" fill="#7891a6"/><text x="600" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#fff">L8</text>
 
-  <text x="380" y="331" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#18222e">Erlangen</text>
-  <text x="380" y="399" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7279">49.59, 11.00</text>
-  <text x="380" y="432" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#83502f">deployed target location</text>
+  <rect x="90" y="552" width="590" height="72" rx="12" fill="#fbf4ea" stroke="#e0d2bf" stroke-width="1.5"/>
+  <rect x="116" y="570" width="18" height="18" rx="4" fill="#db6c31"/>
+  <text x="146" y="584" font-family="Arial, sans-serif" font-size="14" fill="#39434c">L4 is Erlangen (49.59, 11.00), the deployed target point.</text>
+  <rect x="116" y="598" width="18" height="18" rx="4" fill="#7891a6"/>
+  <text x="146" y="612" font-family="Arial, sans-serif" font-size="14" fill="#39434c">L0-L8 are local grid cache points for spatial research.</text>
 
-  <text x="800" y="86" font-family="Georgia, serif" font-size="24" fill="#f6f2eb">Current data facts</text>
-  <text x="800" y="128" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Archive cache</text>
-  <text x="800" y="151" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">747,264 hourly rows</text>
+  <text x="955" y="86" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#f6f2eb">Current data facts</text>
+  <text x="955" y="128" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Archive cache</text>
+  <text x="955" y="151" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">747,264 hourly rows</text>
 
-  <text x="800" y="194" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Archive span</text>
-  <text x="800" y="217" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">1941-03-04 to</text>
-  <text x="800" y="241" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">2026-06-01</text>
+  <text x="955" y="194" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Archive span</text>
+  <text x="955" y="217" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">1941-03-04 to</text>
+  <text x="955" y="241" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">2026-06-01</text>
 
-  <text x="800" y="284" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Production model input</text>
-  <text x="800" y="307" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">240 h x 28 features</text>
+  <text x="955" y="284" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Production model input</text>
+  <text x="955" y="307" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">240 h x 28 features</text>
 
-  <text x="800" y="350" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Published history</text>
-  <text x="800" y="373" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">285 temp forecasts</text>
-  <text x="800" y="397" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">133 multi-target forecasts</text>
+  <text x="955" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Published history</text>
+  <text x="955" y="373" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">285 temp forecasts</text>
+  <text x="955" y="397" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">133 multi-target forecasts</text>
 
-  <text x="800" y="440" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Local grid cache</text>
-  <text x="800" y="463" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">8 neighboring points</text>
-  <text x="800" y="487" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">available for research</text>
+  <text x="955" y="440" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#d7e1ea">Local grid cache</text>
+  <text x="955" y="463" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">8 neighboring points</text>
+  <text x="955" y="487" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">available for research</text>
 
-  <rect x="800" y="526" width="18" height="18" rx="4" fill="#db6c31"/>
-  <text x="830" y="540" font-family="Arial, sans-serif" font-size="14" fill="#f1f6fb">deployed target point</text>
-  <rect x="800" y="558" width="18" height="18" rx="4" fill="#7891a6"/>
-  <text x="830" y="572" font-family="Arial, sans-serif" font-size="14" fill="#f1f6fb">local spatial context cache</text>
+  <rect x="822" y="548" width="133" height="52" rx="10" fill="#172838" stroke="#263f54" stroke-width="1"/>
+  <rect x="840" y="564" width="18" height="18" rx="4" fill="#db6c31"/>
+  <text x="868" y="578" font-family="Arial, sans-serif" font-size="13" fill="#f1f6fb">deployed point</text>
+  <rect x="970" y="548" width="146" height="52" rx="10" fill="#172838" stroke="#263f54" stroke-width="1"/>
+  <rect x="988" y="564" width="18" height="18" rx="4" fill="#7891a6"/>
+  <text x="1016" y="578" font-family="Arial, sans-serif" font-size="13" fill="#f1f6fb">grid cache points</text>
 </svg>
