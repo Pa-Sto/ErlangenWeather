@@ -350,3 +350,14 @@
 - **overall_accuracy**: 16.514005952537396
 - **commit**: b6ddc814e78f4830e2495b8d2f595f5530095683
 - **branch**: main
+
+### 2026-06-17T23:46:17Z — predict
+
+- **source**: forecast
+- **targets**: ["temperature_2m", "rain", "cloudcover"]
+- **seq_days**: 10
+- **label_days**: 3
+- **horizon_hours**: 72
+- **overall_accuracy**: 16.447684643491062
+- **commit**: 04e7a698e2ef9157538a874a9262585a15a69a9d
+- **branch**: main
