@@ -1,14 +1,14 @@
 {
-  "updated_at": "2026-06-19T23:08:08.949032Z",
+  "updated_at": "2026-06-20T00:09:13.445577Z",
   "window_min_lag_days": 5,
   "n_points": {
-    "temp": 23784,
-    "rain": 9832,
-    "cloud": 10440
+    "temp": 23790,
+    "rain": 9835,
+    "cloud": 10443
   },
   "mse": {
-    "temperature_c": 13.555584526086388,
-    "rain_mm_per_h": 0.0598082071189538,
-    "cloudcover_pct": 1565.1221343564212
+    "temperature_c": 13.560443480759313,
+    "rain_mm_per_h": 0.05979273787965025,
+    "cloudcover_pct": 1565.561925672413
   }
 }
