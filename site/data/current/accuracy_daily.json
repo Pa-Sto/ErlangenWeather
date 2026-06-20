@@ -1002,5 +1002,9 @@
   {
     "date": "2026-06-15",
     "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-06-16",
+    "accuracy_percent": 0.0
   }
 ]
