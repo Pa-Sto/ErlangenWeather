@@ -1334,5 +1334,9 @@
   {
     "date": "2026-09-06",
     "accuracy_percent": 0.0
+  },
+  {
+    "date": "2026-09-07",
+    "accuracy_percent": 29.2010926200585
   }
 ]
